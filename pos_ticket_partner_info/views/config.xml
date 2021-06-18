@@ -14,7 +14,7 @@
                             <field name="show_client_signature"/>
                         </div>
                         <div class="o_setting_right_pane">
-                            <label for="show_client_signature" string="show signature"/>
+                            <label for="show_client_signature" string="show customer signature"/>
                         </div>
                     </div>
                 </div>
