@@ -20,10 +20,12 @@ setuptools.setup(
         'odoo13-addon-pos_partner_lang',
         'odoo13-addon-pos_payment_method_image',
         'odoo13-addon-pos_payment_terminal',
+        'odoo13-addon-pos_picking_delayed',
         'odoo13-addon-pos_product_sort',
         'odoo13-addon-pos_quick_logout',
         'odoo13-addon-pos_report_session_summary',
         'odoo13-addon-pos_session_pay_invoice',
+        'odoo13-addon-pos_stock_picking_invoice_link',
         'odoo13-addon-pos_timeout',
     ],
     classifiers=[
