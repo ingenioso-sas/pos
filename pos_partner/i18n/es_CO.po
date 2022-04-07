@@ -1,0 +1,27 @@
+#. module: partner_pos
+#. openerp-web
+#: code:partner_pos/static/src/xml/pos.xml:6
+#, python-format
+msgid "Identification"
+msgstr "Identificación"
+
+#. module: partner_pos
+#. openerp-web
+#: code:partner_pos/static/src/xml/pos.xml:12
+#, python-format
+msgid "Date birth"
+msgstr "Fecha nacimiento"
+
+#. module: partner_pos
+#. openerp-web
+#: code:partner_pos/static/src/xml/pos.xml:20
+#, python-format
+msgid "BIRTHDAY"
+msgstr "DÍA DE CUMPLEAÑOS"
+
+#. module: partner_pos
+#. openerp-web
+#: code:partner_pos/static/src/xml/pos.xml:25
+#, python-format
+msgid "MONTH OF BIRTHDAY"
+msgstr "MES DE CUMPLEAÑOS"

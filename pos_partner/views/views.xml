@@ -1,0 +1,47 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<odoo>
+
+    <record id="pos_partner_partner_form_view" model="ir.ui.view">
+        <field name="name">partner.common.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="priority">3</field>
+        <field name="inherit_id" ref="base.view_partner_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//form/sheet//field[@name='vat']" position="after">
+                <field name="identificacion"  />
+            </xpath>
+            <xpath expr="//form/sheet//field[@name='category_id']" position="after">
+                <field name="fecha_nac" />
+            </xpath>
+<!--            <xpath expr="//form/sheet//field[@name='category_id']" position="after">-->
+<!--                <field name="mes_nac" attrs="{'invisible': True }" />-->
+<!--            </xpath>-->
+        </field>
+    </record>
+
+<!--    <record id="view_feha_nac_tree" model="ir.ui.view">-->
+<!--        <field name="name">partner.tree.inherit.partner.fechanac</field>-->
+<!--        <field name="model">res.partner</field>-->
+<!--        <field name="inherit_id" ref="base.view_partner_tree"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <xpath expr="//field[@name='active']" position="after">-->
+<!--                <field name="mes_nac" />-->
+<!--            </xpath>-->
+<!--        </field>-->
+<!--    </record>-->
+
+<!--    <record id="view_res_partner_view_filter" model="ir.ui.view">-->
+<!--        <field name="name">res.partner.filter.inherit.res.partner</field>-->
+<!--        <field name="model">res.partner</field>-->
+<!--        <field name="inherit_id" ref="base.view_res_partner_filter"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <xpath expr="//group[@name='group_by']" position="inside">-->
+<!--                <filter name="mes_nac" string="Mes Nacimiento" domain="[]" context="{'group_by' : 'mes_nac'}"/>-->
+<!--            </xpath>-->
+<!--            <xpath expr="//field[last()]" position="after">-->
+<!--                <field name="mes_nac" />-->
+<!--            </xpath>-->
+<!--        </field>-->
+<!--    </record>-->
+
+</odoo>

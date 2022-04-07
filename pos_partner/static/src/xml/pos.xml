@@ -1,0 +1,59 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<templates id="template_partner" xml:space="preserve" >
+    <t t-extend="ClientDetails">
+        <t t-jquery="div.client-details-left" t-operation="append">
+            <div class='client-detail'>
+                <span class='label'>Identification</span>
+                <t t-if='partner.identificacion'>
+                    <span class='detail'><t t-esc='partner.identificacion' /></span>
+                </t>
+            </div>
+            <div class='client-detail'>
+                <span class='label'>Date birth</span>
+                <t t-if='partner.fecha_nac'>
+                    <span class='detail'><t t-esc="partner.fecha_nac" /></span>
+                    <t t-set="ahora" t-value="new Date()" />
+                    <t t-set="datebirth" t-value="new Date(Date.parse(partner.fecha_nac.toString() + ' 00:00:00'))" />
+                    <!-- <t t-esc="ahora.getDate()" /> -->
+                    <t t-if="(datebirth.getMonth() == ahora.getMonth())" >
+                        <t t-if="(datebirth.getDate() == ahora.getDate())" >
+                            <div class="happy_birthday">BIRTHDAY
+                                <i class="fa fa-birthday-cake" style="font-size:1.4em; margin-left:10px;"></i> <!-- fontawesome.com -->
+                            </div>
+                        </t>
+                        <t t-else="" >
+                            <div class="happy_birthday">MONTH OF BIRTHDAY
+                                <i class="fa fa-birthday-cake" style="font-size:1.4em; margin-left:10px;"></i> <!-- fontawesome.com -->
+                            </div>
+                        </t>
+                    </t>
+                </t>
+                <t t-if='!partner.fecha_nac'>N/A</t>
+            </div>
+        </t>
+    </t>
+    <t t-extend="ClientDetailsEdit">
+        <t t-jquery="div.client-details-left" t-operation="append">
+            <div class='client-detail'>
+                <span class='label'>Identification</span>
+                <input class='detail ' name='identificacion' t-att-value='partner.identificacion || ""' placeholder='identificacion'></input>
+            </div>
+            <div class='client-detail'>
+                <span class='label'>Date birth</span>
+                <input class='detail ' name='fecha_nac' type="date" t-att-value='partner.fecha_nac || ""' ></input>
+            </div>
+        </t>
+    </t>
+
+    <t t-extend="ClientListScreenWidget">
+        <t t-jquery="table.client-list thead tr" t-operation="append">
+            <th>Identificacion</th>
+        </t>
+    </t>
+
+    <t t-extend="ClientLine">
+        <t t-jquery="tr.client-line" t-operation="append">
+            <td><t t-esc='partner.identificacion or ""' /></td>
+        </t>
+    </t>
+</templates>

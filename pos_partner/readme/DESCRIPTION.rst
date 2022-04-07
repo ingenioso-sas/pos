@@ -1,0 +1,1 @@
+Este módulo fue escrito para extender la funcionalidad de Odoo para los datos de los cleintes, por ejemplo de fecha de nacimiento y la identificación de los clientes, en el formulario de cliente convencional y en el punto de venta.
