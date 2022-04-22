@@ -10,7 +10,8 @@
                     <div class="o_setting_right_pane">
                         <label for="loyalty_id" string="Loyalty Program (OCA)" />
                         <div class="text-muted">
-                            Loyalty program that will be available in this PoS
+                            <!--Loyalty program that will be available in this PoS-->
+                            Programa de fidelización que estará disponible en este POS
                         </div>
                         <div class="content-group mt16">
                             <field name="loyalty_id" />
