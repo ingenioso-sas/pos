@@ -42,9 +42,11 @@ class LoyaltyProgram(models.Model):
         help="Los montos de los puntos de fidelidad se redondearán a múltiplos de este valor: ",
         translate=True
     )
+    
     rule_ids = fields.One2many(
         comodel_name="loyalty.rule", inverse_name="loyalty_program_id", string="Reglas", #string="Rules" 
     )
+
     reward_ids = fields.One2many(
         comodel_name="loyalty.reward",
         inverse_name="loyalty_program_id",

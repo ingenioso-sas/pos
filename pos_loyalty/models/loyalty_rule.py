@@ -18,7 +18,7 @@ class LoyaltyRule(models.Model):
         string="Tipo",
         required=True,
         #default="product",
-        default="producto",
+        default="product",
         #help="The concept this rule applies to",
         help="El concepto al que se aplica esta regla",
     )
@@ -29,8 +29,7 @@ class LoyaltyRule(models.Model):
         #help="The points from this rule will be added "
         #"to points won from other rules with "
         #"the same concept" 
-        
-        
+        #         
     )
     pp_product = fields.Float(
         #string="Points per product", help="Amount of points earned per product"

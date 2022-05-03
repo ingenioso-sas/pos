@@ -419,8 +419,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 var lrounding = this.pos.loyalty.rounding;
                 var crounding = this.pos.currency.rounding;
                 var spendable = this.get_spendable_points();
-                console.log('PUntosGastable', spendable);
-
+            
                 var order_total = this.get_total_with_tax();
                 var product = this.pos.db.get_product_by_id(reward.point_product_id[0]);
 

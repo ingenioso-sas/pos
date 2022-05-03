@@ -16,11 +16,13 @@ class LoyaltyReward(models.Model):
     type = fields.Selection(
         #selection=[("gift", "Gift"), ("discount", "Discount"), ("resale", "Resale")],
         #string="Type",
-        selection=[("gift", "Regalo"), ("discount", "Descuento"), ("resale", "Reventa")],
+        #selection=[("gift", "Regalo"), ("discount", "Descuento"), ("resale", "Reventa")],                   
+        selection=[("discount", "Descuento")],
         string="Tipo",
         required=True,
         #help="Type of the reward",
         help="Tipo de recompensa",
+        default="discount"
     )
     minimum_points = fields.Float(
         string="Puntos mínimos",
@@ -51,6 +53,7 @@ class LoyaltyReward(models.Model):
         string="Programa de fidelidad",
         help="El programa de lealtad al que pertenece esta recompensa",
     )
+
     gift_product_id = fields.Many2one(
         comodel_name="product.product",
         domain=[("available_in_pos", "=", True)],
@@ -59,6 +62,7 @@ class LoyaltyReward(models.Model):
         string="Producto de regalo",
         help="El producto entregado como recompensa.",
     )
+
     discount_product_id = fields.Many2one(
         comodel_name="product.product",
         domain=[("available_in_pos", "=", True)],
@@ -67,6 +71,7 @@ class LoyaltyReward(models.Model):
         string="Producto de descuento",
         help="El producto utilizado para aplicar los descuentos.",
     )
+    
     point_product_id = fields.Many2one(
         comodel_name="product.product",
         domain=[("available_in_pos", "=", True)],
@@ -75,7 +80,7 @@ class LoyaltyReward(models.Model):
         string="Producto puntual",
         help="Producto que representa un punto que es vendido por el cliente.",
     )
-
+   
     @api.constrains("type", "gift_product_id")
     def _check_gift_product(self):
         for reward in self:
@@ -84,7 +89,7 @@ class LoyaltyReward(models.Model):
                     #_("Gift product field is mandatory for gift rewards")
                     _("El campo de producto de regalo es obligatorio para las recompensas de regalo.")
                 )
-
+   
     @api.constrains("type", "discount_product_id")
     def _check_discount_product(self):
         for reward in self:
@@ -93,7 +98,7 @@ class LoyaltyReward(models.Model):
                     #_("Discount product field is " "mandatory for discount rewards")
                     _("El campo de producto con descuento es obligatorio para las recompensas con descuento.")
                 )
-
+    
     @api.constrains("type", "point_product_id")
     def _check_point_product(self):
         for reward in self:
@@ -102,3 +107,4 @@ class LoyaltyReward(models.Model):
                     #_("Point product field is " "mandatory for point resale rewards")
                     _("El campo de producto de puntos es obligatorio para las recompensas de reventa de puntos.")
                 )
+   
