@@ -4,10 +4,10 @@
 {
     "name": "Point of Sale - Payment Method Image",
     "summary": "Add images on Payment Method available in the PoS",
-    "version": "13.0.1.0.1",
+    "version": "13.0.1.0.2",
     "category": "Point of Sale",
     "author": "GRAP, Odoo Community Association (OCA)",
-    "website": "https://www.github.com/OCA/pos",
+    "website": "https://github.com/OCA/pos",
     "license": "AGPL-3",
     "depends": ["point_of_sale"],
     "data": ["views/templates.xml", "views/view_pos_payment_method.xml"],
