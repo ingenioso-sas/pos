@@ -4,12 +4,12 @@
 {
     "name": "Point of Sale - Picking Creation Delayed",
     "summary": "Delay the creation of the picking when PoS order is created",
-    "version": "13.0.1.0.0",
+    "version": "13.0.1.0.1",
     "category": "Point Of Sale",
     "author": "GRAP, " "Odoo Community Association (OCA)",
     "maintainers": ["legalsylvain"],
     "license": "AGPL-3",
-    "website": "https://www.github.com/OCA/pos",
+    "website": "https://github.com/OCA/pos",
     "depends": ["point_of_sale", "queue_job"],
     "data": [
         "data/queue_job_channel.xml",
