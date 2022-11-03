@@ -9,11 +9,7 @@
             <script
                 type="text/javascript"
                 src="/pos_discount_orders/static/src/js/pos.js"
-            />            
-            <link
-                rel="stylesheet"
-                href="/pos_discount_orders/static/src/css/pos.css"
-            />
+            />                        
         </xpath>
     </template>
    
