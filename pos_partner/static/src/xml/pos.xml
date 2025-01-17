@@ -9,7 +9,7 @@
                 </t>
             </div>
             <div class='client-detail'>
-                <span class='label'>Date birth</span>
+                <span class='label'>Date Birth</span>
                 <t t-if='partner.fecha_nac'>
                     <span class='detail'><t t-esc="partner.fecha_nac" /></span>
                     <t t-set="ahora" t-value="new Date()" />
@@ -39,7 +39,7 @@
                 <input class='detail ' name='identificacion' t-att-value='partner.identificacion || ""' placeholder='identificacion'></input>
             </div>
             <div class='client-detail'>
-                <span class='label'>Date birth</span>
+                <span class='label'>Date Birth</span>
                 <input class='detail ' name='fecha_nac' type="date" t-att-value='partner.fecha_nac || ""' ></input>
             </div>
         </t>
@@ -47,7 +47,7 @@
 
     <t t-extend="ClientListScreenWidget">
         <t t-jquery="table.client-list thead tr" t-operation="append">
-            <th>Identificacion</th>
+            <th>Identification</th>
         </t>
     </t>
 
