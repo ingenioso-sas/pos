@@ -1,0 +1,49 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* pos_ticket_partner_info
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 13.0-20230607\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-13 21:43+0000\n"
+"PO-Revision-Date: 2025-01-13 21:43+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#. module: pos_ticket_partner_info
+#: model_terms:ir.ui.view,arch_db:pos_ticket_partner_info.pos_partner_config
+msgid "Customer"
+msgstr ""
+
+#. module: pos_ticket_partner_info
+#: model:ir.model,name:pos_ticket_partner_info.model_pos_config
+msgid "Point of Sale Configuration"
+msgstr ""
+
+#. module: pos_ticket_partner_info
+#: model:ir.model.fields,field_description:pos_ticket_partner_info.field_pos_config__show_client_signature
+msgid "Show customer signature"
+msgstr ""
+
+#. module: pos_ticket_partner_info
+#: model_terms:ir.ui.view,arch_db:pos_ticket_partner_info.pos_partner_config
+msgid "Show customer signature in ticket."
+msgstr ""
+
+#. module: pos_ticket_partner_info
+#. openerp-web
+#: code:addons/pos_ticket_partner_info/static/src/xml/pos.xml:0
+#, python-format
+msgid "________________________________"
+msgstr ""
+
+#. module: pos_ticket_partner_info
+#: model_terms:ir.ui.view,arch_db:pos_ticket_partner_info.pos_partner_config
+msgid "show customer signature"
+msgstr ""
