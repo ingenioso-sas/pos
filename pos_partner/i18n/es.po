@@ -7,26 +7,28 @@ msgstr ""
 "Project-Id-Version: Odoo Server 13.0-20230607\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-01-13 18:18+0000\n"
-"PO-Revision-Date: 2025-01-13 18:18+0000\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2025-01-18 23:42+0000\n"
+"Last-Translator: Julian Montero <jmontero@ingenioso.co>\n"
+"Language-Team: Spanish <http://weblate.cloud.ingenioso.co/projects/pos/"
+"pos_partner/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.9.2\n"
 
 #. module: pos_partner
 #. openerp-web
 #: code:addons/pos_partner/static/src/xml/pos.xml:0
 #, python-format
 msgid "BIRTHDAY"
-msgstr ""
+msgstr "CUMPLEAÑOS"
 
 #. module: pos_partner
 #: model:ir.model,name:pos_partner.model_res_partner
 msgid "Contact"
-msgstr ""
+msgstr "Contacto"
 
 #. module: pos_partner
 #. openerp-web
@@ -34,7 +36,7 @@ msgstr ""
 #: code:addons/pos_partner/static/src/xml/pos.xml:0
 #, python-format
 msgid "Date birth"
-msgstr ""
+msgstr "Fecha de Nacimiento"
 
 #. module: pos_partner
 #: model:ir.model.fields,field_description:pos_partner.field_res_partner__edad
