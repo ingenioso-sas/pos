@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8' ?>
-<templates id="template_partner" xml:space="preserve" >
+<templates id="template_partner" xml:space="preserve">
     <t t-extend="ClientDetails">
         <t t-jquery="div.client-details-left" t-operation="append">
             <div class='client-detail'>
@@ -13,17 +13,26 @@
                 <t t-if='partner.fecha_nac'>
                     <span class='detail'><t t-esc="partner.fecha_nac" /></span>
                     <t t-set="ahora" t-value="new Date()" />
-                    <t t-set="datebirth" t-value="new Date(Date.parse(partner.fecha_nac.toString() + ' 00:00:00'))" />
+                    <t
+                        t-set="datebirth"
+                        t-value="new Date(Date.parse(partner.fecha_nac.toString() + ' 00:00:00'))"
+                    />
                     <!-- <t t-esc="ahora.getDate()" /> -->
-                    <t t-if="(datebirth.getMonth() == ahora.getMonth())" >
-                        <t t-if="(datebirth.getDate() == ahora.getDate())" >
+                    <t t-if="(datebirth.getMonth() == ahora.getMonth())">
+                        <t t-if="(datebirth.getDate() == ahora.getDate())">
                             <div class="happy_birthday">BIRTHDAY
-                                <i class="fa fa-birthday-cake" style="font-size:1.4em; margin-left:10px;"></i> <!-- fontawesome.com -->
+                                <i
+                                    class="fa fa-birthday-cake"
+                                    style="font-size:1.4em; margin-left:10px;"
+                                /> <!-- fontawesome.com -->
                             </div>
                         </t>
-                        <t t-else="" >
+                        <t t-else="">
                             <div class="happy_birthday">MONTH OF BIRTHDAY
-                                <i class="fa fa-birthday-cake" style="font-size:1.4em; margin-left:10px;"></i> <!-- fontawesome.com -->
+                                <i
+                                    class="fa fa-birthday-cake"
+                                    style="font-size:1.4em; margin-left:10px;"
+                                /> <!-- fontawesome.com -->
                             </div>
                         </t>
                     </t>
@@ -36,11 +45,21 @@
         <t t-jquery="div.client-details-left" t-operation="append">
             <div class='client-detail'>
                 <span class='label'>Identification</span>
-                <input class='detail ' name='identificacion' t-att-value='partner.identificacion || ""' placeholder='identificacion'></input>
+                <input
+                    class='detail '
+                    name='identificacion'
+                    t-att-value='partner.identificacion || ""'
+                    placeholder='identificacion'
+                />
             </div>
             <div class='client-detail'>
                 <span class='label'>Date Birth</span>
-                <input class='detail ' name='fecha_nac' type="date" t-att-value='partner.fecha_nac || ""' ></input>
+                <input
+                    class='detail '
+                    name='fecha_nac'
+                    type="date"
+                    t-att-value='partner.fecha_nac || ""'
+                />
             </div>
         </t>
     </t>
