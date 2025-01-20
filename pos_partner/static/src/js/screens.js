@@ -92,7 +92,6 @@ odoo.define("pos_partner.screens", function(require) {
                 "rgba(220,20,60,",
             ];
             var streamingConfetti = false;
-            var animationTimer = null;
             var pause = false;
             var lastFrameTime = Date.now();
             var particles = [];
@@ -186,7 +185,6 @@ odoo.define("pos_partner.screens", function(require) {
                 if (pause) return;
                 else if (particles.length === 0) {
                     context.clearRect(0, 0, window.innerWidth, window.innerHeight);
-                    animationTimer = null;
                 } else {
                     var now = Date.now();
                     var delta = now - lastFrameTime;
@@ -199,8 +197,9 @@ odoo.define("pos_partner.screens", function(require) {
                         drawParticles(context);
                         lastFrameTime = now - (delta % self.confetti.frameInterval);
                     }
-                    animationTimer = requestAnimationFrame(runAnimation);
+                    requestAnimationFrame(runAnimation);
                 }
+
             }
 
             function resumeConfetti() {
