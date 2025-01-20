@@ -42,35 +42,35 @@ odoo.define("pos_partner.screens", function(require) {
             var self = this;
             self.confetti = {
                 // Set max confetti count
-                maxCount: 100, 
+                maxCount: 100,
                 // Set the particle animation speed
-                speed: 1, 
+                speed: 1,
                 // The confetti animation frame interval in milliseconds
-                frameInterval: 15, 
+                frameInterval: 15,
                 // The alpha opacity of the confetti (between 0 and 1, where 1 is opaque and 0 is invisible)
-                alpha: 1.0, 
+                alpha: 1.0,
                 // Whether to use gradients for the confetti particles
-                gradient: false, 
+                gradient: false,
                 // Call to start confetti animation (with optional timeout in milliseconds, and optional min and max random confetti count)
-                start: null, 
+                start: null,
                 // Call to stop adding confetti
-                stop: null, 
+                stop: null,
                 // Call to start or stop the confetti animation depending on whether it's already running
-                toggle: null, 
+                toggle: null,
                 // Call to freeze confetti animation
-                pause: null, 
+                pause: null,
                 // Call to unfreeze confetti animation
-                resume: null, 
+                resume: null,
                 // Call to toggle whether the confetti animation is paused
-                togglePause: null, 
+                togglePause: null,
                 // Call to stop the confetti animation and remove all confetti immediately
-                remove: null, 
+                remove: null,
                 // Call and returns true or false depending on whether the confetti animation is paused
-                isPaused: null, 
+                isPaused: null,
                 // Call and returns true or false depending on whether the animation is running
-                isRunning: null, 
+                isRunning: null,
             };
-          
+
             var supportsAnimationFrame =
                 window.requestAnimationFrame ||
                 window.webkitRequestAnimationFrame ||
@@ -92,7 +92,7 @@ odoo.define("pos_partner.screens", function(require) {
                 "rgba(220,20,60,",
             ];
             var streamingConfetti = false;
-            var animationTimer = null;
+            //var animationTimer = null;
             var pause = false;
             var lastFrameTime = Date.now();
             var particles = [];
@@ -152,7 +152,7 @@ odoo.define("pos_partner.screens", function(require) {
 
             function isConfettiPaused() {
                 return pause;
-            }               
+            }
 
             function startConfetti(timeout, min, max) {
                 var width = window.innerWidth;
@@ -240,8 +240,8 @@ odoo.define("pos_partner.screens", function(require) {
 
             function drawParticles(context) {
                 // Verifcar si la inicialización esta bien
-                var particle = []; 
-                let x, y, x2, y2;
+                var particle = [];
+                let x=0,x2=0, y2=0;
                 for (var i = 0; i < particles.length; i++) {
                     particle = particles[i];
                     context.beginPath();
@@ -269,7 +269,7 @@ odoo.define("pos_partner.screens", function(require) {
             function updateParticles() {
                 var width = window.innerWidth;
                 var height = window.innerHeight;
-                var particle;
+                var particle = [];
                 waveAngle += 0.01;
                 for (var i = 0; i < particles.length; i++) {
                     particle = particles[i];
@@ -313,5 +313,4 @@ odoo.define("pos_partner.screens", function(require) {
             self.confetti.isRunning = isConfettiRunning;
         },
     });
-   
 });
