@@ -92,7 +92,7 @@ odoo.define("pos_partner.screens", function(require) {
                 "rgba(220,20,60,",
             ];
             var streamingConfetti = false;
-            //var animationTimer = null;
+            var animationTimer = null;
             var pause = false;
             var lastFrameTime = Date.now();
             var particles = [];
@@ -113,6 +113,73 @@ odoo.define("pos_partner.screens", function(require) {
                 particle.tiltAngleIncrement = Math.random() * 0.07 + 0.05;
                 particle.tiltAngle = Math.random() * Math.PI;
                 return particle;
+            }
+
+            function drawParticles(context) {
+                // Verifcar si la inicialización esta bien
+                var particle = [];
+                let x = 0,
+                    x2 = 0,
+                    y2 = 0;
+                for (var i = 0; i < particles.length; i++) {
+                    particle = particles[i];
+                    context.beginPath();
+                    context.lineWidth = particle.diameter;
+                    x2 = particle.x + particle.tilt;
+                    x = x2 + particle.diameter / 2;
+                    y2 = particle.y + particle.tilt + particle.diameter / 2;
+                    if (self.confetti.gradient) {
+                        var gradient = context.createLinearGradient(
+                            x,
+                            particle.y,
+                            x2,
+                            y2
+                        );
+                        gradient.addColorStop("0", particle.color);
+                        gradient.addColorStop("1.0", particle.color2);
+                        context.strokeStyle = gradient;
+                    } else context.strokeStyle = particle.color;
+                    context.moveTo(x, particle.y);
+                    context.lineTo(x2, y2);
+                    context.stroke();
+                }
+            }
+
+            function updateParticles() {
+                var width = window.innerWidth;
+                var height = window.innerHeight;
+                var particle = [];
+                waveAngle += 0.01;
+                for (var i = 0; i < particles.length; i++) {
+                    particle = particles[i];
+                    if (!streamingConfetti && particle.y < -15)
+                        particle.y = height + 100;
+                    else {
+                        particle.tiltAngle += particle.tiltAngleIncrement;
+                        particle.x += Math.sin(waveAngle) - 0.5;
+                        particle.y +=
+                            (Math.cos(waveAngle) +
+                                particle.diameter +
+                                self.confetti.speed) *
+                            0.5;
+                        particle.tilt = Math.sin(particle.tiltAngle) * 15;
+                    }
+                    if (
+                        particle.x > width + 20 ||
+                        particle.x < -20 ||
+                        particle.y > height
+                    ) {
+                        if (
+                            streamingConfetti &&
+                            particles.length <= self.confetti.maxCount
+                        )
+                            resetParticle(particle, width, height);
+                        else {
+                            particles.splice(i, 1);
+                            i--;
+                        }
+                    }
+                }
             }
 
             function runAnimation() {
@@ -152,6 +219,10 @@ odoo.define("pos_partner.screens", function(require) {
 
             function isConfettiPaused() {
                 return pause;
+            }
+
+            function stopConfetti() {
+                streamingConfetti = false;
             }
 
             function startConfetti(timeout, min, max) {
@@ -219,10 +290,6 @@ odoo.define("pos_partner.screens", function(require) {
                 }
             }
 
-            function stopConfetti() {
-                streamingConfetti = false;
-            }
-
             function removeConfetti() {
                 stop();
                 pause = false;
@@ -238,70 +305,6 @@ odoo.define("pos_partner.screens", function(require) {
                 return streamingConfetti;
             }
 
-            function drawParticles(context) {
-                // Verifcar si la inicialización esta bien
-                var particle = [];
-                let x=0,x2=0, y2=0;
-                for (var i = 0; i < particles.length; i++) {
-                    particle = particles[i];
-                    context.beginPath();
-                    context.lineWidth = particle.diameter;
-                    x2 = particle.x + particle.tilt;
-                    x = x2 + particle.diameter / 2;
-                    y2 = particle.y + particle.tilt + particle.diameter / 2;
-                    if (self.confetti.gradient) {
-                        var gradient = context.createLinearGradient(
-                            x,
-                            particle.y,
-                            x2,
-                            y2
-                        );
-                        gradient.addColorStop("0", particle.color);
-                        gradient.addColorStop("1.0", particle.color2);
-                        context.strokeStyle = gradient;
-                    } else context.strokeStyle = particle.color;
-                    context.moveTo(x, particle.y);
-                    context.lineTo(x2, y2);
-                    context.stroke();
-                }
-            }
-
-            function updateParticles() {
-                var width = window.innerWidth;
-                var height = window.innerHeight;
-                var particle = [];
-                waveAngle += 0.01;
-                for (var i = 0; i < particles.length; i++) {
-                    particle = particles[i];
-                    if (!streamingConfetti && particle.y < -15)
-                        particle.y = height + 100;
-                    else {
-                        particle.tiltAngle += particle.tiltAngleIncrement;
-                        particle.x += Math.sin(waveAngle) - 0.5;
-                        particle.y +=
-                            (Math.cos(waveAngle) +
-                                particle.diameter +
-                                self.confetti.speed) *
-                            0.5;
-                        particle.tilt = Math.sin(particle.tiltAngle) * 15;
-                    }
-                    if (
-                        particle.x > width + 20 ||
-                        particle.x < -20 ||
-                        particle.y > height
-                    ) {
-                        if (
-                            streamingConfetti &&
-                            particles.length <= self.confetti.maxCount
-                        )
-                            resetParticle(particle, width, height);
-                        else {
-                            particles.splice(i, 1);
-                            i--;
-                        }
-                    }
-                }
-            }
             self.confetti.start = startConfetti;
             self.confetti.stop = stopConfetti;
             self.confetti.toggle = toggleConfetti;
