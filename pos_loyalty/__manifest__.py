@@ -12,7 +12,7 @@
     "RGB Consulting SL, "
     "Lambda IS, "
     "Odoo Community Association (OCA)",
-    "website": "https://odoo-community.org/",
+    "website": "https://github.com/OCA/pos",
     "depends": ["point_of_sale"],
     "demo": ["demo/templates.xml"],
     "data": [
@@ -23,7 +23,7 @@
         "views/loyalty_rule_view.xml",
         "views/pos_config_view.xml",
         "views/pos_order_view.xml",
-        "views/res_partner_view.xml"
+        "views/res_partner_view.xml",
     ],
     "qweb": ["static/src/xml/pos.xml"],
     "installable": True,

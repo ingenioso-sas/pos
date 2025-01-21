@@ -10,8 +10,8 @@ class PosConfig(models.Model):
 
     loyalty_id = fields.Many2one(
         comodel_name="loyalty.program",
-        #string="Loyalty Program",
-        #help="The loyalty program used by this " "Point of Sale",
+        # string="Loyalty Program",
+        # help="The loyalty program used by this " "Point of Sale",
         string="Programa de fidelidad",
         help="El programa de fidelización utilizado por este Punto de Venta",
     )

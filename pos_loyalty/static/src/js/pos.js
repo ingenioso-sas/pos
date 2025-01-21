@@ -54,13 +54,13 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                     self.loyalty.rules_by_product_id = {};
                     self.loyalty.rules_by_category_id = {};
 
-                    function update_rules(rules, rule, id) {
-                        if (!rules[id]) {
-                            rules[id] = [rule];
+                    function update_rules(_rules, rule, id) {
+                        if (!_rules[id]) {
+                            _rules[id] = [rule];
                         } else if (rule.cumulative) {
-                            rules[id].unshift(rule);
+                            _rules[id].unshift(rule);
                         } else {
-                            rules[id].push(rule);
+                            _rules[id].push(rule);
                         }
                     }
 
@@ -134,24 +134,21 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
 
     var _order_super = models.Order.prototype;
     models.Order = models.Order.extend({
-
-        get_total_sold_with_tax: function(){
+        get_total_sold_with_tax: function() {
             var orderLines = this.get_orderlines();
-            var total_soldT = 0
+            var total_soldT = 0;
 
-            for(var i = 0; i <orderLines.length; i++){
+            for (var i = 0; i < orderLines.length; i++) {
                 var line = orderLines[i];
-                total_soldT +=line.get_price_with_tax();
+                total_soldT += line.get_price_with_tax();
             }
-            return total_soldT
-
+            return total_soldT;
         },
         /* The total of points won, excluding the points spent on rewards */
         get_won_points: function() {
             if (!this.pos.loyalty || !this.get_client()) {
                 return 0;
             }
-
             var orderLines = this.get_orderlines();
             var rounding = this.pos.loyalty.rounding;
             var product_sold = 0;
@@ -163,7 +160,6 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 var rules = this.pos.loyalty.rules_by_product_id[product.id] || [];
                 var overriden = false;
                 var total_points = 0;
-
 
                 if (line.get_reward()) {
                     // Reward products are ignored
@@ -247,16 +243,16 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
             var lines = this.get_orderlines();
             var rounding = this.pos.loyalty.rounding;
             var points = 0;
-            //TestJMM
-            var total_sold = 0;
-            var points_cost_price = 0;
-            var max_discount = 0;
-            var point_add_for_discount = 0
-            var points_discount=0;
+            // TestJMM
+            // var total_sold = 0;
+            // var points_cost_price = 0;
+            // var max_discount = 0;
+            // var point_add_for_discount = 0
+            // var points_discount=0;
 
             for (var i = 0; i < lines.length; i++) {
                 var line = lines[i];
-                total_sold += line.get_quantity();
+                // Total_sold += line.get_quantity();
                 var reward = line.get_reward();
                 if (reward) {
                     if (reward.type === "gift") {
@@ -265,7 +261,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                             rounding
                         );
                     } else if (reward.type === "discount") {
-                        //Calculo de puntos gastados (descuento / costo por punto)
+                        // Calculo de puntos gastados (descuento / costo por punto)
                         points = (line.price / reward.point_cost) * -1;
                     } else if (reward.type === "resale") {
                         points += -line.get_quantity();
@@ -359,7 +355,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
             return rewards;
         },
 
-        /*Metodo para el calculo del descuento*/
+        /* Metodo para el calculo del descuento*/
         apply_reward: function(reward) {
             var client = this.get_client();
             if (!client) {
@@ -381,22 +377,25 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 });
             } else if (reward.type === "discount") {
                 var crounding = this.pos.currency.rounding;
-                //Total de la venta
+                // Total de la venta
                 var order_total = this.get_total_with_tax();
-                //Calculo del descuento
-                var discount = round_pr(order_total *(reward.discount/ 100), crounding);
+                // Calculo del descuento
+                var discount = round_pr(
+                    order_total * (reward.discount / 100),
+                    crounding
+                );
                 var discount_max = reward.discount_max;
-                //Puntos actuales del cliente
+                // Puntos actuales del cliente
                 var points_current_client = this.get_client().loyalty_points;
 
-                if(discount_max && discount > discount_max){
-                   discount = discount_max;
+                if (discount_max && discount > discount_max) {
+                    discount = discount_max;
                 }
-                //Calculo de pesos a puntos. Puntos a descontar.
+                // Calculo de pesos a puntos. Puntos a descontar.
                 var points_for_discount = discount / reward.point_cost;
-                //Puntos minimos entre puntos cliente y puntos a descontar
+                // Puntos minimos entre puntos cliente y puntos a descontar
                 var min_points = Math.min(points_for_discount, points_current_client);
-                //Valor del descuento.
+                // Valor del descuento.
                 discount = min_points * reward.point_cost;
 
                 var product = this.pos.db.get_product_by_id(
@@ -406,7 +405,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 if (!product) {
                     return;
                 }
-                //Retorna un producto
+                // Retorna un producto
                 this.add_product(product, {
                     price: -discount,
                     quantity: 1,
@@ -419,7 +418,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 var lrounding = this.pos.loyalty.rounding;
                 var crounding = this.pos.currency.rounding;
                 var spendable = this.get_spendable_points();
-            
+
                 var order_total = this.get_total_with_tax();
                 var product = this.pos.db.get_product_by_id(reward.point_product_id[0]);
 

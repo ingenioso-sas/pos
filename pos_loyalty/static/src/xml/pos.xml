@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <templates id="template_loyalty" xml:space="preserve">
-    <t t-name="LoyaltyPoints" >
+    <t t-name="LoyaltyPoints">
         <div class='loyalty-points'>
             <!--<div class='loyalty-points-title'>Points</div>-->
             <div class='loyalty-points-title'>Puntos</div>

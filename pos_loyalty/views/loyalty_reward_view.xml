@@ -17,10 +17,10 @@
 
                 <group>
                     <!--
-                    <field                    
+                    <field
                         name="gift_product_id"
-                        attrs="{'invisible':[('type','!=','gift')], 'required':[('type','=','gift')]}"                    
-                    />                              
+                        attrs="{'invisible':[('type','!=','gift')], 'required':[('type','=','gift')]}"
+                    />
                     -->
                     <field
                         name="discount"
@@ -41,18 +41,19 @@
                         attrs="{'invisible': [('type','!=','resale')], 'required': [('type','=','resale')]}"
                     />
                     -->
-                    
+
                 </group>
-                
+
                 <group>
                     <field
                         name="point_cost"
-                        attrs="{'invisible':[('type','!=','discount')]}" 
+                        attrs="{'invisible':[('type','!=','discount')]}"
                     />
-                    <field 
-                        name="minimum_points" 
-                        attrs="{'invisible':[('type','!=','discount')]}" />
-                </group>                
+                    <field
+                        name="minimum_points"
+                        attrs="{'invisible':[('type','!=','discount')]}"
+                    />
+                </group>
             </form>
         </field>
     </record>

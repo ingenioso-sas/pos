@@ -9,8 +9,8 @@ class ResPartner(models.Model):
     _inherit = "res.partner"
 
     loyalty_points = fields.Float(
-        #string="Loyalty Points",
-        #help="The loyalty points the user won as " "part of a Loyalty Program",
+        # string="Loyalty Points",
+        # help="The loyalty points the user won as " "part of a Loyalty Program",
         string="Puntos de lealtad",
         help="Los puntos de fidelidad que el usuario ganó como parte de un programa de fidelidad",
     )

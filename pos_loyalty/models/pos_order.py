@@ -9,8 +9,8 @@ class PosOrder(models.Model):
     _inherit = "pos.order"
 
     loyalty_points = fields.Float(
-        #string="Loyalty Points",
-        #help="The amount of Loyalty points awarded " "to the customer with this order",
+        # string="Loyalty Points",
+        # help="The amount of Loyalty points awarded " "to the customer with this order",
         string="Puntos de lealtad",
         help="La cantidad de puntos de fidelidad otorgados al cliente con este pedido",
     )

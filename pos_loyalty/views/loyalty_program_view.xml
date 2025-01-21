@@ -23,25 +23,26 @@
                         </group>
                     </group>
                     <!--<separator string="Rules" colspan="4" />-->
-                    
+
                     <!--<separator string="Reglas" colspan="4" />-->
                     <!--<p>Rules define how loyalty points are earned for specific products or categories</p>-->
                     <!--<p>Las reglas definen cómo se ganan los puntos de fidelidad para productos o categorías específicos.</p>-->
                     <!--<field name="rule_ids" colspan="4" nolabel="1">
-                        
+
                         <tree string="Rules">
                             <field name="name" />
                             <field name="pp_product" />
                             <field name="pp_currency" />
                             <field name="cumulative" />
                         </tree>
-                    
+
                     </field>
                     -->
                     <!--<separator string="Rewards" colspan="4" />-->
                     <separator string="Recompensas" colspan="4" />
                     <!--<p>Reward the customer with gifts or discounts for loyalty points</p>-->
-                    <p>Recompense al cliente con regalos o descuentos por puntos de fidelidad.</p>
+                    <p
+                    >Recompense al cliente con regalos o descuentos por puntos de fidelidad.</p>
                     <field name="reward_ids" colspan="4" nolabel="1">
                         <tree string="Rewards">
                             <field name="name" />
@@ -68,9 +69,11 @@
         <field name="view_mode">tree,form</field>
         <field name="help" type="html">
             <!--<p class="oe_view_nocontent_create">Click create to define a Loyalty Program.</p>-->
-            <p class="oe_view_nocontent_create">Haga clic en <b>Crear</b> para definir un programa de fidelización.</p>
+            <p class="oe_view_nocontent_create">Haga clic en <b
+                >Crear</b> para definir un programa de fidelización.</p>
             <!--<p>Loyalty Programs allow you customers to earn points and rewards when purchasing from your shops.</p>-->
-            <p>Los programas de lealtad le permiten a sus clientes ganar puntos y recompensas al comprar en sus tiendas.</p>
+            <p
+            >Los programas de lealtad le permiten a sus clientes ganar puntos y recompensas al comprar en sus tiendas.</p>
         </field>
     </record>
     <menuitem
