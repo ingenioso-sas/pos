@@ -1,18 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
+<?xml version="1.0" encoding="UTF-8" ?>
 <templates id="template" xml:space="preserve">
 
-    <t t-extend="OrderReceipt" >
+    <t t-extend="OrderReceipt">
         <t t-jquery=".after-footer" t-operation="after">
-            <t t-if="widget.pos.config.show_client_signature" >
+            <t t-if="widget.pos.config.show_client_signature">
                 <div class="pos-center-align">
-                    <br/>
-                    <br/>
-                    <br/>
-                    <br/>
+                    <br />
+                    <br />
+                    <br />
+                    <br />
                     <div>________________________________</div>
                     <t t-esc="widget.name_client" />
-                    <br/>
+                    <br />
                     <t t-esc="widget.phone_client" />
                 </div>
             </t>
