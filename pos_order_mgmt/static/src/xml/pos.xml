@@ -16,7 +16,7 @@
                         Back
                     </span>
                     <span class='searchbox'>
-                        <input placeholder='Search Order' />
+                        <input id="custom-search" placeholder='Buscar por Referencia o Producto ...' />
                         <span class='search-clear' />
                     </span>
                     <span class='searchbox' />
