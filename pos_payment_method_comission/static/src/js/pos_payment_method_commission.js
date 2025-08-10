@@ -20,9 +20,9 @@ odoo.define('pos_payment_method_comission.pos', function (require) {
             });
             payment_method_model.fields.push(
                 'has_commission',
-                'commission_type',
                 'commission_rate',
                 'commission_fixed_amount',
+                'commission_journal_id',
                 'commission_account_id'
             );
             return _super_posmodel.initialize.call(this, session, attributes);
@@ -46,11 +46,13 @@ odoo.define('pos_payment_method_comission.pos', function (require) {
             var amount = this.get_amount();
             var commission = 0;
             if (payment_method.has_commission) {
-                if (payment_method.commission_type === 'percentage') {
-                    commission = amount * (payment_method.commission_rate / 100);
-                } else {
-                    commission = payment_method.commission_fixed_amount;
+                var percentage_commission = 0;
+                if (payment_method.commission_rate) {
+                    var rate = payment_method.commission_rate / 100;
+                    percentage_commission = amount * rate;
                 }
+                var fixed_commission = payment_method.commission_fixed_amount || 0;
+                commission = percentage_commission + fixed_commission;
             }
             this.commission = commission;
             this.trigger('change', this);

@@ -14,18 +14,17 @@ License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
             <xpath expr="//field[@name='company_id']" position="after">
                 <group string="Commission Settings" name="commission_settings">
                     <field name="has_commission"/>
-                    <label for="commission_type" attrs="{'invisible': [('has_commission', '=', False)]}"/>
+                    <label for="commission_rate" attrs="{'invisible': [('has_commission', '=', False)]}"/>
                     <div attrs="{'invisible': [('has_commission', '=', False)]}">
-                        <field name="commission_type" nolabel="1" widget="radio"/>
-                    </div>
-                    <label for="commission_rate" attrs="{'invisible': ['|', ('has_commission', '=', False), ('commission_type', '!=', 'percentage')]}"/>
-                    <div attrs="{'invisible': ['|', ('has_commission', '=', False), ('commission_type', '!=', 'percentage')]}">
                         <field name="commission_rate" nolabel="1" class="oe_inline"/> %%
                     </div>
-                    <label for="commission_fixed_amount" attrs="{'invisible': ['|', ('has_commission', '=', False), ('commission_type', '!=', 'fixed')]}"/>
-                    <div attrs="{'invisible': ['|', ('has_commission', '=', False), ('commission_type', '!=', 'fixed')]}">
+                    <label for="commission_fixed_amount" attrs="{'invisible': [('has_commission', '=', False)]}"/>
+                    <div attrs="{'invisible': [('has_commission', '=', False)]}">
                         <field name="commission_fixed_amount" nolabel="1" class="oe_inline"/>
                     </div>
+                    <field name="commission_journal_id"
+                        attrs="{'invisible': [('has_commission', '=', False)], 'required': [('has_commission', '=', True)]}"
+                        context="{'company_id': company_id}"/>
                     <field name="commission_account_id"
                         attrs="{'invisible': [('has_commission', '=', False)], 'required': [('has_commission', '=', True)]}"
                         context="{'company_id': company_id}"/>

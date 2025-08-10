@@ -14,11 +14,6 @@ class PosPaymentMethod(models.Model):
         string="Apply Commission",
         help="Check this box to apply a commission to payments made with this method."
     )
-    commission_type = fields.Selection(
-        [('fixed', 'Fixed'), ('percentage', 'Percentage')],
-        string="Commission Type",
-        default='percentage'
-    )
     commission_rate = fields.Float(
         string="Commission Rate (%)",
         digits='Discount',
@@ -35,6 +30,12 @@ class PosPaymentMethod(models.Model):
         related='company_id.currency_id',
         readonly=True,
     )
+    commission_journal_id = fields.Many2one(
+        'account.journal',
+        string="Commission Journal",
+        domain=[('type', '=', 'general')],
+        help="The journal where the commission entries will be recorded."
+    )
     commission_account_id = fields.Many2one(
         'account.account',
         string="Commission Expense Account",
@@ -45,5 +46,5 @@ class PosPaymentMethod(models.Model):
     @api.constrains('commission_rate')
     def _check_commission_rate(self):
         for record in self:
-            if record.commission_type == 'percentage' and (record.commission_rate < 0 or record.commission_rate > 100):
+            if record.commission_rate < 0 or record.commission_rate > 100:
                 raise ValidationError(_("Commission rate must be between 0 and 100."))

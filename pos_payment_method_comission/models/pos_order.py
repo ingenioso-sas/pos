@@ -32,28 +32,28 @@ class PosOrder(models.Model):
         commission = payment.commission
 
         # The move should be created in the company's currency
-        amount_in_company_currency = payment.order_id.pricelist_id.currency_id._convert(
+        amount_in_company_currency = payment.pos_order_id.pricelist_id.currency_id._convert(
             commission,
-            payment.order_id.company_id.currency_id,
-            payment.order_id.company_id,
-            payment.order_id.date_order,
+            payment.pos_order_id.company_id.currency_id,
+            payment.pos_order_id.company_id,
+            payment.pos_order_id.date_order,
         )
 
         return self.env['account.move'].create({
-            'journal_id': payment_method.journal_id.id,
-            'date': payment.order_id.date_order,
-            'ref': _('Commission: %s') % payment.order_id.name,
+            'journal_id': payment_method.commission_journal_id.id,
+            'date': payment.pos_order_id.date_order,
+            'ref': _('Commission: %s') % payment.pos_order_id.name,
             'line_ids': [
                 # Credit the payment method's outstanding account
                 (0, 0, {
-                    'name': _('Commission for %s') % payment.order_id.name,
+                    'name': _('Commission for %s') % payment.pos_order_id.name,
                     'account_id': payment.payment_method_id.receivable_account_id.id,
                     'credit': amount_in_company_currency,
                     'debit': 0,
                 }),
                 # Debit the commission expense account
                 (0, 0, {
-                    'name': _('Commission for %s') % payment.order_id.name,
+                    'name': _('Commission for %s') % payment.pos_order_id.name,
                     'account_id': commission_account.id,
                     'debit': amount_in_company_currency,
                     'credit': 0,
