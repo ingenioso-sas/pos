@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <!-- Add commission amount to the payment line in payment screen -->
+    <t t-extend="PaymentScreen-Paymentline">
+        <t t-jquery=".paymentline-amount" t-operation="after">
+            <t t-if="paymentline.get_commission() > 0">
+                <span class="paymentline-commission">
+                    + <t t-esc="widget.format_currency(paymentline.get_commission())"/> commission
+                </span>
+            </t>
+        </t>
+    </t>
+
+    <!-- Add total commission to the receipt -->
+    <t t-extend="OrderReceipt">
+        <t t-jquery=".pos-receipt-right-align" t-operation="before">
+             <t t-if="receipt.total_commission > 0">
+                <tr>
+                    <td>Commission:</td>
+                    <td class="pos-receipt-right-align">
+                        <t t-esc="widget.format_currency(receipt.total_commission)"/>
+                    </td>
+                </tr>
+            </t>
+        </t>
+    </t>
+
+</templates>
