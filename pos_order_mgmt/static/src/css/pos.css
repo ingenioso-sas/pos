@@ -43,3 +43,7 @@
 .orderlist-screen table td:not([name="td_ol_customer"]) {
     white-space: nowrap;
 }
+
+#custom-search{
+    width: 100%;
+}

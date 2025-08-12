@@ -69,9 +69,11 @@ class PosOrder(models.Model):
         return [
             "|",
             "|",
+            "|",
             ("name", "ilike", query),
             ("pos_reference", "ilike", query),
             ("partner_id.display_name", "ilike", query),
+            ('lines.product_id.name', 'ilike', query),
         ]
 
     @api.model
