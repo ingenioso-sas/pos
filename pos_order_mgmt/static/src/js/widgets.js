@@ -62,6 +62,7 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
             this.unknown_products = [];
             this.search_query = false;
             this.perform_search();
+            this.order_offset = 0;
         },
 
         auto_back: true,
@@ -100,6 +101,10 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
 
             this.$(".searchbox .search-clear").click(function() {
                 self.clear_search();
+            });
+
+            this.$el.off('click', '.load-more-orders').on('click', '.load-more-orders', function () {
+                self.perform_search();
             });
 
             this.perform_search();
@@ -144,6 +149,17 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
             this.$(".order-list-return").click(function(event) {
                 self.order_list_actions(event, "return");
             });
+
+            // if (!this.$('.load-more-orders').length) {
+            //     var loadMoreBtn = $('<button class="load-more-orders btn btn-secondary" style="margin-top:10px;">Cargar más</button>');
+            //     loadMoreBtn.click(function() {
+            //         self.search_done_orders(self.search_query, self.order_offset || 0)
+            //             .then(function() {
+            //                 self.render_list();
+            //             });
+            //     });
+            //     $(contents).parent().append(loadMoreBtn);
+            // }
         },
 
         order_list_actions: function(event, action) {
@@ -186,11 +202,11 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
             this.pos.config.iface_print_skip_screen = skip_screen_state;
 
             // If it's invoiced, we also print the invoice
-            if (order_data.to_invoice) {
-                this.pos.chrome.do_action("point_of_sale.pos_invoice_report", {
-                    additional_context: {active_ids: [order_data.id]},
-                });
-            }
+            // if (order_data.to_invoice) {
+            //     this.pos.chrome.do_action("point_of_sale.pos_invoice_report", {
+            //         additional_context: {active_ids: [order_data.id]},
+            //     });
+            // }
 
             // Destroy the order so it's removed from localStorage
             // Otherwise it will stay there and reappear on browser refresh
@@ -395,16 +411,23 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
             return order;
         },
 
-        // Search Part
+        // Search Part 
         search_done_orders: function(query) {
             var self = this;
             return this._rpc({
                 model: "pos.order",
                 method: "search_done_orders_for_pos",
-                args: [query || "", this.pos.pos_session.id],
+                args: [query || "", this.pos.pos_session.id, this.order_offset],
             })
                 .then(function(result) {
-                    self.orders = result;
+                    // Se agrego funcon para concantera los reusltados 
+                    if (self.order_offset === 0){
+                        self.orders = result;
+                    }
+                    else{
+                        self.orders = self.orders.concat(result)
+                    }
+                    
                     // Get the date in local time
                     _.each(self.orders, function(order) {
                         if (order.date_order) {
@@ -414,6 +437,15 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
                                 .format("YYYY-MM-DD HH:mm:ss");
                         }
                     });
+                    self.order_offset = (self.order_offset || 0) + result.length;
+
+                    // // Mostrar/ocultar botón según si llegaron más registros
+                    // if (result.length > 0) {
+                    //     self.$('.load-more-orders').show();
+                    // } else {
+                    //     self.$('.load-more-orders').hide();
+                    // }
+
                 })
                 .catch(function(error, event) {
                     if (parseInt(error.code, 10) === 200) {
@@ -431,7 +463,7 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
                             ),
                         });
                     }
-                    event.preventDefault();
+                    event?.preventDefault();
                 });
         },
 

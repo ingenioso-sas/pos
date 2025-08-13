@@ -87,7 +87,7 @@ class PosOrder(models.Model):
         ]
 
     @api.model
-    def search_done_orders_for_pos(self, query, pos_session_id):
+    def search_done_orders_for_pos(self, query, pos_session_id, offset=0):
         session_obj = self.env["pos.session"]
         config = session_obj.browse(pos_session_id).config_id
         condition = self._prepare_filter_for_pos(pos_session_id)
@@ -99,7 +99,10 @@ class PosOrder(models.Model):
             condition += self._prepare_filter_query_for_pos(pos_session_id, query)
         field_names = self._prepare_fields_for_pos_list()
         return self.search_read(
-            condition, field_names, limit=config.iface_load_done_order_max_qty
+            condition,
+            field_names,
+            limit=config.iface_load_done_order_max_qty,
+            offset=offset
         )
 
     def _prepare_done_order_for_pos(self):
