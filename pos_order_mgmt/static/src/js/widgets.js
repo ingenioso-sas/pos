@@ -61,8 +61,9 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
             this.orders = [];
             this.unknown_products = [];
             this.search_query = false;
+            this.page = 0;
+            this.pagination = {};
             this.perform_search();
-            this.order_offset = 0;
         },
 
         auto_back: true,
@@ -92,6 +93,7 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
 
             var search_timeout = null;
             this.$(".searchbox input").on("keyup", function() {
+                self.page = 0;
                 self.search_query = this.value;
                 clearTimeout(search_timeout);
                 search_timeout = setTimeout(function() {
@@ -103,8 +105,17 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
                 self.clear_search();
             });
 
-            this.$el.off('click', '.load-more-orders').on('click', '.load-more-orders', function () {
-                self.perform_search();
+            this.$el.off('click', '.previous-page-order').on('click', '.previous-page-order', function () {
+                if (self.page > 0) {
+                    self.page -= 1;
+                    self.perform_search();
+                }
+            });
+            this.$el.off('click', '.next-page-order').on('click', '.next-page-order', function () {
+                if (self.page < self.pagination.total_pages - 1) {
+                    self.page += 1;
+                    self.perform_search();
+                }
             });
 
             this.perform_search();
@@ -135,6 +146,24 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
                 }
                 contents.appendChild(orderline);
             }
+
+            if (this.pagination.total_pages > 0) {
+                this.$('.page-indicator').text('Page ' + (this.pagination.current_page + 1) + ' / ' + this.pagination.total_pages);
+            } else {
+                this.$('.page-indicator').text('No orders found');
+            }
+        
+            if (this.pagination.prev_page !== null) {
+                this.$('.previous-page-order').show();
+            } else {
+                this.$('.previous-page-order').hide();
+            }
+            if (this.pagination.next_page !== null) {
+                this.$('.next-page-order').show();
+            } else {
+                this.$('.next-page-order').hide();
+            }
+
             // FIXME: Everytime the list is rendered we need to reassing the
             // button events.
             this.$(".order-list-return").off("click");
@@ -150,16 +179,6 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
                 self.order_list_actions(event, "return");
             });
 
-            // if (!this.$('.load-more-orders').length) {
-            //     var loadMoreBtn = $('<button class="load-more-orders btn btn-secondary" style="margin-top:10px;">Cargar más</button>');
-            //     loadMoreBtn.click(function() {
-            //         self.search_done_orders(self.search_query, self.order_offset || 0)
-            //             .then(function() {
-            //                 self.render_list();
-            //             });
-            //     });
-            //     $(contents).parent().append(loadMoreBtn);
-            // }
         },
 
         order_list_actions: function(event, action) {
@@ -417,17 +436,19 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
             return this._rpc({
                 model: "pos.order",
                 method: "search_done_orders_for_pos",
-                args: [query || "", this.pos.pos_session.id, this.order_offset],
+                args: [query || "", this.pos.pos_session.id, this.page],
             })
                 .then(function(result) {
-                    // Se agrego funcon para concantera los reusltados 
-                    if (self.order_offset === 0){
-                        self.orders = result;
-                    }
-                    else{
-                        self.orders = self.orders.concat(result)
-                    }
-                    
+                    self.orders = result.items;
+                    self.pagination = {
+                        current_page: result.current_page,
+                        next_page: result.nex_page,
+                        prev_page: result.prev_page,
+                        total_items: result.total_items,
+                        total_pages: result.total_pages,
+                        page_size: result.page_size,
+                    };
+
                     // Get the date in local time
                     _.each(self.orders, function(order) {
                         if (order.date_order) {
@@ -437,15 +458,6 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
                                 .format("YYYY-MM-DD HH:mm:ss");
                         }
                     });
-                    self.order_offset = (self.order_offset || 0) + result.length;
-
-                    // // Mostrar/ocultar botón según si llegaron más registros
-                    // if (result.length > 0) {
-                    //     self.$('.load-more-orders').show();
-                    // } else {
-                    //     self.$('.load-more-orders').hide();
-                    // }
-
                 })
                 .catch(function(error, event) {
                     if (parseInt(error.code, 10) === 200) {
@@ -479,6 +491,7 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
             self.$(".searchbox input")[0].value = "";
             self.$(".searchbox input").focus();
             self.search_query = false;
+            self.page = 0;
             self.perform_search();
         },
     });

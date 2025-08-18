@@ -83,12 +83,14 @@ class PosOrder(models.Model):
             "pos_reference",
             "partner_id",
             "date_order",
-            "amount_total",
+            "amount_total"
         ]
 
     @api.model
-    def search_done_orders_for_pos(self, query, pos_session_id, offset=0):
+    def search_done_orders_for_pos(self, query, pos_session_id, page=0):
         session_obj = self.env["pos.session"]
+        if not page or page <= 0:
+            page = 0
         config = session_obj.browse(pos_session_id).config_id
         condition = self._prepare_filter_for_pos(pos_session_id)
         if not query:
@@ -98,12 +100,25 @@ class PosOrder(models.Model):
             # Search globally by criteria
             condition += self._prepare_filter_query_for_pos(pos_session_id, query)
         field_names = self._prepare_fields_for_pos_list()
-        return self.search_read(
+
+        total_items = self.search_count(
+            condition
+        )
+        result_query = self.search_read(
             condition,
             field_names,
             limit=config.iface_load_done_order_max_qty,
-            offset=offset
+            offset= page*config.iface_load_done_order_max_qty
         )
+        return {
+            "items": result_query,
+            "current_page": page,
+            "nex_page": page + 1 if (page + 1) * config.iface_load_done_order_max_qty < total_items else None,
+            "prev_page": page - 1 if page > 0 else None,
+            "total_items": total_items,
+            "total_pages": (total_items + config.iface_load_done_order_max_qty - 1) // config.iface_load_done_order_max_qty,
+            "page_size": config.iface_load_done_order_max_qty
+        }
 
     def _prepare_done_order_for_pos(self):
         self.ensure_one()

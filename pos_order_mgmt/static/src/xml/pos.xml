@@ -46,9 +46,15 @@
                 </section>
             </div>
             <section class="order-footer" style="text-align: center; margin-top: 10px;  margin-bottom: 30px;">
-                    <button class="button load-more-orders" style="font-size: 16px; padding: 10px 20px;">
-                        <i class="fa fa-plus" /> Cargar más
-                    </button>
+                    <div class="pagination">
+                        <button class="button previous-page-order" style="font-size: 16px; padding: 10px 20px;">
+                            <i class="fa fa-undo" /> Anterior Página
+                        </button>
+                        <span class="page-indicator"></span>
+                        <button class="button next-page-order" style="font-size: 16px; padding: 10px 20px;">
+                            <i class="fa fa-plus" /> Siguiente Página
+                        </button>
+                    </div>
             </section>
         </div>
     </t>
