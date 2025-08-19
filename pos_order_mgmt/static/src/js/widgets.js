@@ -118,6 +118,13 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
                 }
             });
 
+            this.$el.off('click', '.first-page-order').on('click', '.first-page-order', function () {
+                if (self.page > 0) {
+                    self.page = 0;
+                    self.perform_search();
+                }
+            });
+
             this.perform_search();
         },
 
@@ -154,8 +161,10 @@ odoo.define("pos_order_mgmt.widgets", function(require) {
             }
         
             if (this.pagination.prev_page !== null) {
+                this.$('.first-page-order').show();
                 this.$('.previous-page-order').show();
             } else {
+                this.$('.first-page-order').hide();
                 this.$('.previous-page-order').hide();
             }
             if (this.pagination.next_page !== null) {

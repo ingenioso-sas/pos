@@ -45,14 +45,17 @@
                     </div>
                 </section>
             </div>
-            <section class="order-footer" style="text-align: center; margin-top: 10px;  margin-bottom: 30px;">
+            <section class="order-footer">
                     <div class="pagination">
-                        <button class="button previous-page-order" style="font-size: 16px; padding: 10px 20px;">
-                            <i class="fa fa-undo" /> Anterior Página
+                        <button class="button first-page-order">
+                            <i class="fa fa-fast-backward"/> First
+                        </button>
+                        <button class="button previous-page-order">
+                            <i class="fa fa-backward"/> Previous
                         </button>
                         <span class="page-indicator"></span>
-                        <button class="button next-page-order" style="font-size: 16px; padding: 10px 20px;">
-                            <i class="fa fa-plus" /> Siguiente Página
+                        <button class="button next-page-order">
+                            Next <i class="fa fa-forward"/>
                         </button>
                     </div>
             </section>
