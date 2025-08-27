@@ -5,32 +5,29 @@ Copyright (C) 2025-Today: Ing.Factura S.L
 License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 -->
 <odoo>
-
     <record id="view_pos_payment_method_inherit_form_commission" model="ir.ui.view">
         <field name="name">pos.payment.method.form.commission</field>
         <field name="model">pos.payment.method</field>
         <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='company_id']" position="after">
-                <group string="Commission Settings" name="commission_settings">
-                    <field name="has_commission"/>
-                    <label for="commission_rate" attrs="{'invisible': [('has_commission', '=', False)]}"/>
-                    <div attrs="{'invisible': [('has_commission', '=', False)]}">
-                        <field name="commission_rate" nolabel="1" class="oe_inline"/> %%
-                    </div>
-                    <label for="commission_fixed_amount" attrs="{'invisible': [('has_commission', '=', False)]}"/>
-                    <div attrs="{'invisible': [('has_commission', '=', False)]}">
-                        <field name="commission_fixed_amount" nolabel="1" class="oe_inline"/>
-                    </div>
-                    <field name="commission_journal_id"
-                        attrs="{'invisible': [('has_commission', '=', False)], 'required': [('has_commission', '=', True)]}"
-                        context="{'company_id': company_id}"/>
-                    <field name="commission_account_id"
-                        attrs="{'invisible': [('has_commission', '=', False)], 'required': [('has_commission', '=', True)]}"
-                        context="{'company_id': company_id}"/>
-                </group>
+                <separator string="Configuración de comisiones"/>
+                <field name="has_commission"/>
+                <label for="commission_rate" attrs="{'invisible': [('has_commission', '=', False)]}"/>
+                <div attrs="{'invisible': [('has_commission', '=', False)]}">
+                    <field name="commission_rate" nolabel="1" class="oe_inline"/> %%
+                </div>
+                <label for="commission_fixed_amount" attrs="{'invisible': [('has_commission', '=', False)]}"/>
+                <div attrs="{'invisible': [('has_commission', '=', False)]}">
+                    <field name="commission_fixed_amount" nolabel="1" class="oe_inline"/>
+                </div>
+                <field name="commission_journal_id"
+                    attrs="{'invisible': [('has_commission', '=', False)], 'required': [('has_commission', '=', True)]}"
+                    context="{'company_id': company_id}"/>
+                <field name="commission_account_id"
+                    attrs="{'invisible': [('has_commission', '=', False)], 'required': [('has_commission', '=', True)]}"
+                    context="{'company_id': company_id}"/>                
             </xpath>
         </field>
     </record>
-
 </odoo>
