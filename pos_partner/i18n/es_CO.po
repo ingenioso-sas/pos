@@ -1,27 +1,100 @@
-#. module: partner_pos
-#. openerp-web
-#: code:partner_pos/static/src/xml/pos.xml:6
-#, python-format
-msgid "Identification"
-msgstr "Identificación"
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* pos_partner
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 13.0-20230607\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-09-01 02:29+0000\n"
+"PO-Revision-Date: 2025-09-01 02:29+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
 
-#. module: partner_pos
-#. openerp-web
-#: code:partner_pos/static/src/xml/pos.xml:12
-#, python-format
-msgid "Date birth"
-msgstr "Fecha nacimiento"
+#. module: pos_partner
+#: model:ir.model.fields,field_description:pos_partner.field_res_partner__edad
+#: model:ir.model.fields,field_description:pos_partner.field_res_users__edad
+msgid "Age"
+msgstr "Edad"
 
-#. module: partner_pos
+#. module: pos_partner
 #. openerp-web
-#: code:partner_pos/static/src/xml/pos.xml:20
+#: code:addons/pos_partner/static/src/xml/pos.xml:0
 #, python-format
 msgid "BIRTHDAY"
 msgstr "DÍA DE CUMPLEAÑOS"
 
-#. module: partner_pos
+#. module: pos_partner
+#: model:ir.model,name:pos_partner.model_res_partner
+msgid "Contact"
+msgstr "Contacto"
+
+#. module: pos_partner
+#: code:addons/pos_partner/models/models.py:0
+#: model:ir.model.fields,help:pos_partner.field_res_partner__identificacion
+#: model:ir.model.fields,help:pos_partner.field_res_users__identificacion
+#, python-format
+msgid "Customer Identification"
+msgstr "ID de cliente"
+
+#. module: pos_partner
 #. openerp-web
-#: code:partner_pos/static/src/xml/pos.xml:25
+#: code:addons/pos_partner/static/src/xml/pos.xml:0
+#, python-format
+msgid "Date Birth"
+msgstr "Fecha Nacimiento"
+
+#. module: pos_partner
+#. openerp-web
+#: code:addons/pos_partner/models/models.py:0
+#: code:addons/pos_partner/static/src/xml/pos.xml:0
+#: model:ir.model.fields,field_description:pos_partner.field_res_partner__fecha_nac
+#: model:ir.model.fields,field_description:pos_partner.field_res_users__fecha_nac
+#: model:ir.model.fields,help:pos_partner.field_res_partner__fecha_nac
+#: model:ir.model.fields,help:pos_partner.field_res_users__fecha_nac
+#, python-format
+msgid "Date of Birth"
+msgstr "Fecha de nacimiento"
+
+#. module: pos_partner
+#: model:ir.model.fields,field_description:pos_partner.field_res_partner__identificacion
+#: model:ir.model.fields,field_description:pos_partner.field_res_users__identificacion
+msgid "Identificación"
+msgstr "Identificación"
+
+#. module: pos_partner
+#. openerp-web
+#: code:addons/pos_partner/models/models.py:0
+#: code:addons/pos_partner/static/src/xml/pos.xml:0
+#, python-format
+msgid "Identification"
+msgstr "Cédula/NIT"
+
+#. module: pos_partner
+#. openerp-web
+#: code:addons/pos_partner/static/src/xml/pos.xml:0
 #, python-format
 msgid "MONTH OF BIRTHDAY"
 msgstr "MES DE CUMPLEAÑOS"
+
+#. module: pos_partner
+#: code:addons/pos_partner/models/models.py:0
+#: code:addons/pos_partner/models/models.py:0
+#: model:ir.model.fields,field_description:pos_partner.field_res_partner__mes_nac
+#: model:ir.model.fields,field_description:pos_partner.field_res_users__mes_nac
+#: model:ir.model.fields,help:pos_partner.field_res_partner__mes_nac
+#: model:ir.model.fields,help:pos_partner.field_res_users__mes_nac
+#, python-format
+msgid "Month of Birth"
+msgstr "Mes de cumpleaños"
+
+#. module: pos_partner
+#. openerp-web
+#: code:addons/pos_partner/static/src/xml/pos.xml:0
+#, python-format
+msgid "N/A"
+msgstr "N/A"

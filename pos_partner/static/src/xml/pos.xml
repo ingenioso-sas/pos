@@ -4,13 +4,7 @@
         <t t-jquery="div.client-details-box" t-operation="append">
             <div class='client-details-left'>
                 <div class='client-detail'>
-                    <span class='label'>Identification</span>
-                    <t t-if='partner.identificacion'>
-                        <span class='detail'><t t-esc='partner.identificacion' /></span>
-                    </t>
-                </div>
-                <div class='client-detail'>
-                    <span class='label'>Date Birth</span>
+                    <span class='label'>Date of Birth</span>
                     <t t-if='partner.fecha_nac'>
                         <span class='detail'><t t-esc="partner.fecha_nac" /></span>
                         <t t-set="ahora" t-value="new Date()" />
@@ -47,15 +41,6 @@
         <t t-jquery="div.client-details-box" t-operation="append">
             <div class='client-details-left'>
                 <div class='client-detail'>
-                    <span class='label'>Identification</span>
-                    <input
-                        class='detail '
-                        name='identificacion'
-                        t-att-value='partner.identificacion || ""'
-                        placeholder='identificacion'
-                    />
-                </div>
-                <div class='client-detail'>
                     <span class='label'>Date Birth</span>
                     <input
                         class='detail '
@@ -76,7 +61,7 @@
 
     <t t-extend="ClientLine">
         <t t-jquery="tr.client-line" t-operation="append">
-            <td><t t-esc='partner.identificacion or ""' /></td>
+            <td><t t-esc='partner.vat or ""' /></td>
         </t>
     </t>
 </templates>
