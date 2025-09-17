@@ -150,16 +150,24 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 return 0;
             }
             var orderLines = this.get_orderlines();
+            var has_discount = orderLines.some(function(line) {
+                return line.get_discount() > 0;
+            });
+
+            if (has_discount) {
+                return 0;
+            }
+
             var rounding = this.pos.loyalty.rounding;
             var product_sold = 0;
             var total_sold = 0;
+            var total_points = 0;
 
             for (var i = 0; i < orderLines.length; i++) {
                 var line = orderLines[i];
                 var product = line.get_product();
                 var rules = this.pos.loyalty.rules_by_product_id[product.id] || [];
                 var overriden = false;
-                var total_points = 0;
 
                 if (line.get_reward()) {
                     // Reward products are ignored

@@ -1,19 +1,18 @@
-# Copyright 2018 Lambda IS DOOEL <https://www.lambda-is.com>
+# Copyright 2024-present, Gemini
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-from odoo import api, models
+from odoo import api, fields, models
 
 
 class PosOrderLine(models.Model):
     _inherit = "pos.order.line"
 
+    reward_id = fields.Many2one("loyalty.reward", string="Applied Reward")
+
     @api.model
     def _order_line_fields(self, line, session_id=None):
-        line = super(PosOrderLine, self)._order_line_fields(line, session_id=session_id)
-        if line and "reward_id" in line[2]:
-            # Delete the key since field doesn't exist
-            # and raises a warning in the logs.
-            # TODO: add field and remove this if data will be
-            # used on server, example in report / widget.
-            del line[2]["reward_id"]
-        return line
+        fields_to_return = super(PosOrderLine, self)._order_line_fields(
+            line, session_id
+        )
+        fields_to_return[2]["reward_id"] = line[2].get("reward_id", False)
+        return fields_to_return
