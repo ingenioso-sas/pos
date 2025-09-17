@@ -20,22 +20,30 @@ class LoyaltyProgram(models.Model):
         # string=_("Points per currency"),
         # help="Amount of loyalty points given to the " "customer per sold currency",
         string=_("Moneda por punto"),
-        help="Cantidad de moneda vendida por punto ganado. \nEjemplo: 1000, es decir, por cada $1000 vendidos el cliente gana 1 punto.",
+        help=(
+            "Monto en dinero que el cliente debe gastar para ganar 1 punto.\n"
+            "Ejemplo: Por cada $1000 vendidos el cliente gana 1 punto."
+        ),
         translate=True,
     )
     pp_product = fields.Float(
         # string=_("Points per product"),
         # help="Amount of loyalty points given to the " "customer per product sold",
         string=_("Puntos por producto"),
-        help="Cantidad de puntos de fidelidad otorgados al cliente por producto vendido.",
+        help=(
+            "Define cuántos puntos gana el cliente por cada producto.\n"
+            "Ejemplo: 2 puntos por producto."
+        ),
     )
     pp_order = fields.Float(
         # string=_("Points per order"),
         # help="Amount of loyalty points given to the "
         # "customer for each point of sale order","""
         string=_("Puntos por orden"),
-        help="Cantidad de puntos de fidelidad entregados al "
-        "cliente para cada pedido de punto de venta.",
+        help=(
+            "Define cuántos puntos gana el cliente por cada pedido."
+            "Ejemplo: 5 puntos por pedido."
+        ),
         translate=True,
     )
     rounding = fields.Float(
@@ -43,7 +51,12 @@ class LoyaltyProgram(models.Model):
         string="Redondeo de puntos",
         default=1,
         # help="Loyalty point amounts will be rounded to " "multiples of this value",
-        help="Los montos de los puntos de fidelidad se redondearán a múltiplos de este valor: ",
+        help=(
+            "Los puntos ganados se redondean al múltiplo más cercano del valor"
+            "configurado aqui. Ejemplo: con redondeo = 5,"
+            "si ganas 3 → se ajusta a 5 ; si ganas 7 → se ajusta a 10."
+            "Con redondeo = 1, los puntos no cambian (3 → 3, 7 → 7)."
+        ),
         translate=True,
     )
 

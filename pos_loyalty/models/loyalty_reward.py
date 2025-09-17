@@ -23,12 +23,12 @@ class LoyaltyReward(models.Model):
         string="Tipo",
         required=True,
         # help="Type of the reward",
-        help="Tipo de recompensa",
+        help="Selecciona la clase de recompensa que recibirá el cliente.",
         default="discount",
     )
     minimum_points = fields.Float(
         string="Puntos mínimos",
-        help="Cantidad mínima de puntos que el cliente debe tener para calificar para esta recompensa.",
+        help="Puntos mínimos requeridos para obtener esta recompensa.",
         # string="Minimum Points",
         # help="Minimum amount of points the customer"
         # " must have to qualify for this reward",
@@ -36,16 +36,19 @@ class LoyaltyReward(models.Model):
     point_cost = fields.Float(
         # string="Point Cost", help="Cost of the reward per monetary unit " "discounted",
         string="Costo de puntos",
-        help="Costo de moneda por punto redimido.",
+        help="Indica cuánto dinero equivale cada punto que el cliente redime.",
     )
     # discount = fields.Float(help="The discount percentage")
-    discount = fields.Float(string="Descuento", help="El porcentaje de descuento",)
+    discount = fields.Float(
+        string="Descuento",
+        help="Indica el porcentaje de descuento aplicado a la compra.",
+        )
 
     discount_max = fields.Float(
         # string="Discount limit",
         # help="Maximum discounted amount allowed for" "this discount reward",
         string="Límite de descuento",
-        help="Importe máximo de descuento permitido para esta recompensa de descuento.",
+        help="Monto máximo en dinero que se puede descontar con esta recompensa.",
     )
     loyalty_program_id = fields.Many2one(
         comodel_name="loyalty.program",
@@ -70,7 +73,7 @@ class LoyaltyReward(models.Model):
         # string="Discount Product",
         # help="The product used to apply " "discounts",
         string="Producto de descuento",
-        help="El producto utilizado para aplicar los descuentos.",
+        help="Producto que representa el descuento en la venta.",
     )
 
     point_product_id = fields.Many2one(
