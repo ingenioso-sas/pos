@@ -2,9 +2,8 @@
 # Copyright 2017 RGB Consulting S.L. (https://www.rgbconsulting.com)
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl).
 
-import math
-
 from odoo import api, fields, models
+from odoo.tools import float_round
 
 
 class PosOrder(models.Model):
@@ -16,29 +15,50 @@ class PosOrder(models.Model):
         readonly=True,
     )
 
-    def _get_loyalty_points_securely(self):
+    def _calculate_loyalty_points_securely(self):
         self.ensure_one()
         if not self.partner_id or not self.session_id.config_id.loyalty_id:
-            return 0
+            return 0, 0
 
-        # Security check: do not award points if there is any discount
+        # Security check: do not award points if there is any standard discount
         if any(line.discount > 0 for line in self.lines):
-            return 0
+            return 0, 0
 
         loyalty = self.session_id.config_id.loyalty_id
         rounding = loyalty.rounding
         if rounding <= 0:
             rounding = 1.0
 
-        points = 0.0
+        points_won = 0.0
+        points_spent = 0.0
         product_sold = 0.0
         total_sold = 0.0
+        reward_discount_total = 0.0
 
         for line in self.lines:
-            # Rewards are not eligible for points
+            # Case 1: The line is a reward, calculate spent points
             if line.reward_id:
-                continue
+                reward = line.reward_id
+                if reward.type == "gift":
+                    points_spent += float_round(
+                        line.qty * reward.point_cost,
+                        precision_rounding=rounding,
+                        rounding_method="UP",
+                    )
+                elif reward.type == "discount":
+                    discount_amount = abs(line.price_subtotal_incl)
+                    reward_discount_total += discount_amount
+                    if reward.point_cost > 0:
+                        points_spent += float_round(
+                            discount_amount / reward.point_cost,
+                            precision_rounding=rounding,
+                            rounding_method="UP",
+                        )
+                elif reward.type == "resale":
+                    points_spent += abs(line.qty)
+                continue  # Go to next line
 
+            # Case 2: The line is a regular product, calculate won points
             rules = self.env["loyalty.rule"].search(
                 [
                     ("loyalty_program_id", "=", loyalty.id),
@@ -50,17 +70,19 @@ class PosOrder(models.Model):
 
             line_points = 0.0
             overridden = False
-            # Category rules have lower priority
             rules = sorted(rules, key=lambda r: 1 if r.type == "category" else 0)
 
             for rule in rules:
                 rule_points = 0.0
-                rule_points += (
-                    math.ceil((line.qty * rule.pp_product) / rounding) * rounding
+                rule_points += float_round(
+                    line.qty * rule.pp_product,
+                    precision_rounding=rounding,
+                    rounding_method="UP",
                 )
-                rule_points += (
-                    math.ceil((line.price_subtotal_incl * rule.pp_currency) / rounding)
-                    * rounding
+                rule_points += float_round(
+                    line.price_subtotal_incl * rule.pp_currency,
+                    precision_rounding=rounding,
+                    rounding_method="UP",
                 )
                 line_points += rule_points
                 if not rule.cumulative:
@@ -71,44 +93,44 @@ class PosOrder(models.Model):
                 product_sold += line.qty
                 total_sold += line.price_subtotal_incl
 
-            points += line_points
+            points_won += line_points
 
-        if loyalty.pp_currency > 0:
-            points += (
-                math.ceil((total_sold / loyalty.pp_currency) / rounding) * rounding
+        # Calculate global points on the net amount
+        net_total_sold = total_sold - reward_discount_total
+        if loyalty.pp_currency > 0 and net_total_sold > 0:
+            points_won += float_round(
+                net_total_sold / loyalty.pp_currency,
+                precision_rounding=rounding,
+                rounding_method="UP",
             )
-        points += math.ceil((product_sold * loyalty.pp_product) / rounding) * rounding
-        points += math.ceil(loyalty.pp_order / rounding) * rounding
 
-        return points
+        points_won += float_round(
+            product_sold * loyalty.pp_product,
+            precision_rounding=rounding,
+            rounding_method="UP",
+        )
+        points_won += float_round(
+            loyalty.pp_order, precision_rounding=rounding, rounding_method="UP"
+        )
+
+        return points_won, points_spent
 
     @api.model
     def _order_fields(self, ui_order):
         res = super(PosOrder, self)._order_fields(ui_order)
-        # We remove the loyalty points from here for security reasons.
-        # It will be computed on the backend.
         res.pop("loyalty_points", None)
         return res
 
     @api.model
     def create_from_ui(self, orders, draft=False):
         created_orders_data = super(PosOrder, self).create_from_ui(orders, draft=draft)
-        order_ids = [o['id'] for o in created_orders_data]
+        order_ids = [o["id"] for o in created_orders_data]
         for order in self.browse(order_ids):
             if order.partner_id:
-                points_won = order._get_loyalty_points_securely()
-                # In this version, spent points are negative lines, so we just sum everything.
-                # The secure function already filters reward lines for won points.
-                points_spent = 0
-                for line in order.lines:
-                    if line.reward_id and line.price_subtotal_incl < 0:
-                        # This logic might need to be adapted if rewards can be returned
-                        # or if their cost is calculated differently.
-                        # For now, assuming spent points are negative price lines.
-                        pass  # Further logic needed to calculate spent points from rewards
+                points_won, points_spent = order._calculate_loyalty_points_securely()
 
-                total_points = points_won - points_spent
-                order.write({"loyalty_points": total_points})
-                if total_points != 0:
-                    order.partner_id.loyalty_points += total_points
+                total_points_change = points_won - points_spent
+                order.write({"loyalty_points": total_points_change})
+                if total_points_change != 0:
+                    order.partner_id.loyalty_points += total_points_change
         return created_orders_data

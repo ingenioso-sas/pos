@@ -170,7 +170,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 var overriden = false;
 
                 if (line.get_reward()) {
-                    // Reward products are ignored
+                    // Reward products are ignored for point calculation
                     continue;
                 }
 
@@ -184,24 +184,21 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                         line.get_price_with_tax() * rule.pp_currency,
                         rounding
                     );
-                    // If affected by a non cumulative rule, skip the others. (non cumulative rules are put
-                    // at the beginning of the list when they are loaded )
                     if (!rule.cumulative) {
                         overriden = true;
                         break;
                     }
                 }
 
-                // Test the category rules
                 if (product.pos_categ_id) {
                     var category = this.pos.db.get_category_by_id(
                         product.pos_categ_id[0]
                     );
                     while (category && !overriden) {
-                        var rules =
+                        var cat_rules =
                             this.pos.loyalty.rules_by_category_id[category.id] || [];
-                        for (var j = 0; j < rules.length; j++) {
-                            var rule = rules[j];
+                        for (var k = 0; k < cat_rules.length; k++) {
+                            var rule = cat_rules[k];
                             total_points += round_pr(
                                 line.get_quantity() * rule.pp_product,
                                 rounding
@@ -215,13 +212,9 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                                 break;
                             }
                         }
-                        var _category = category;
                         category = this.pos.db.get_category_by_id(
                             this.pos.db.get_category_parent_id(category.id)
                         );
-                        if (_category === category) {
-                            break;
-                        }
                     }
                 }
                 if (!overriden) {
@@ -229,11 +222,27 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                     total_sold += line.get_price_with_tax();
                 }
             }
-            // Calcula el total de los puntos ganados (1 punto por cada 1000 Pesos)
-            total_points += round_pr(
-                total_sold / this.pos.loyalty.pp_currency,
-                rounding
-            );
+
+            // Subtract redeemed reward value from the total to get the net amount
+            var reward_discount_total = 0;
+            for (var i = 0; i < orderLines.length; i++) {
+                var line = orderLines[i];
+                var reward = line.get_reward();
+                if (reward && reward.type === "discount") {
+                    reward_discount_total += -line.price; // price is negative
+                }
+            }
+
+            var net_total_sold = total_sold - reward_discount_total;
+
+            // Calculate global points on the net amount
+            if (this.pos.loyalty.pp_currency > 0 && net_total_sold > 0) {
+                total_points += round_pr(
+                    net_total_sold / this.pos.loyalty.pp_currency,
+                    rounding
+                );
+            }
+
             total_points += round_pr(
                 product_sold * this.pos.loyalty.pp_product,
                 rounding
