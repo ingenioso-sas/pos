@@ -32,6 +32,10 @@
                         attrs="{'invisible':[('type','!=','discount')]}"
                     />
                     <field
+                        name="discount_rounding"
+                        attrs="{'invisible':[('type','!=','discount')]}"
+                    />
+                    <field
                         name="discount_product_id"
                         attrs="{'invisible':[('type','!=','discount')], 'required':[('type','=','discount')]}"
                     />

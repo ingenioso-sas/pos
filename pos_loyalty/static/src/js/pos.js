@@ -93,6 +93,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                     "point_cost",
                     "discount_product_id",
                     "discount",
+                    "discount_rounding",
                     "discount_max",
                     "point_product_id",
                 ],
@@ -144,7 +145,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
             }
             return total_soldT;
         },
-        /* The total of points won, excluding the points spent on rewards */
+        /* El total de puntos ganados, excluyendo los puntos gastados en recompensas */
         get_won_points: function() {
             if (!this.pos.loyalty || !this.get_client()) {
                 return 0;
@@ -170,7 +171,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 var overriden = false;
 
                 if (line.get_reward()) {
-                    // Reward products are ignored for point calculation
+                    // Los productos de recompensa se ignoran para el cálculo de puntos
                     continue;
                 }
 
@@ -223,19 +224,19 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 }
             }
 
-            // Subtract redeemed reward value from the total to get the net amount
+            // Reste el valor de la recompensa canjeada del total para obtener el monto neto
             var reward_discount_total = 0;
             for (var i = 0; i < orderLines.length; i++) {
                 var line = orderLines[i];
                 var reward = line.get_reward();
                 if (reward && reward.type === "discount") {
-                    reward_discount_total += -line.price; // price is negative
+                    reward_discount_total += -line.price; // pricio es negativo
                 }
             }
 
             var net_total_sold = total_sold - reward_discount_total;
 
-            // Calculate global points on the net amount
+            // Calcular puntos globales sobre el importe neto
             if (this.pos.loyalty.pp_currency > 0 && net_total_sold > 0) {
                 total_points += round_pr(
                     net_total_sold / this.pos.loyalty.pp_currency,
@@ -249,7 +250,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
             );
             total_points += round_pr(this.pos.loyalty.pp_order, rounding);
 
-            // Final check for the new business rule
+            // Comprobación final de la nueva regla de negocio
             var has_redeemed_rewards = this.get_spent_points() > 0;
             if (has_redeemed_rewards && !this.pos.loyalty.allow_points_on_redemption) {
                 total_points = 0;
@@ -258,7 +259,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
             return total_points;
         },
 
-        /* The total number of points spent on rewards */
+        /* El número total de puntos gastados en recompensas */
         get_spent_points: function() {
             if (!this.pos.loyalty || !this.get_client()) {
                 return 0;
@@ -294,7 +295,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
             return points;
         },
 
-        /* The total number of points lost or won after the order is validated */
+        /* El número total de puntos perdidos o ganados después de validar el pedido */
         get_new_points: function() {
             if (!this.pos.loyalty || !this.get_client()) {
                 return 0;
@@ -400,26 +401,27 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 });
             } else if (reward.type === "discount") {
                 var crounding = this.pos.currency.rounding;
-                // Total de la venta
                 var order_total = this.get_total_with_tax();
-                // Calculo del descuento
                 var discount = round_pr(
                     order_total * (reward.discount / 100),
                     crounding
                 );
                 var discount_max = reward.discount_max;
-                // Puntos actuales del cliente
                 var points_current_client = this.get_client().loyalty_points;
 
                 if (discount_max && discount > discount_max) {
                     discount = discount_max;
                 }
-                // Calculo de pesos a puntos. Puntos a descontar.
+
                 var points_for_discount = discount / reward.point_cost;
-                // Puntos minimos entre puntos cliente y puntos a descontar
                 var min_points = Math.min(points_for_discount, points_current_client);
-                // Valor del descuento.
                 discount = min_points * reward.point_cost;
+
+                // Nueva lógica de redondeo para el valor de descuento
+                var rounding_val = reward.discount_rounding;
+                if (rounding_val > 0 && discount > 0) {
+                    discount = Math.floor(discount / rounding_val) * rounding_val;
+                }
 
                 var product = this.pos.db.get_product_by_id(
                     reward.discount_product_id[0]

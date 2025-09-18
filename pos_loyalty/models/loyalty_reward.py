@@ -40,9 +40,19 @@ class LoyaltyReward(models.Model):
     )
     # discount = fields.Float(help="The discount percentage")
     discount = fields.Float(
-        string="Descuento",
+        string="% de Descuento",
         help="Indica el porcentaje de descuento aplicado a la compra.",
         )
+
+    discount_rounding = fields.Float(
+        string="Redondeo del Valor del Descuento",
+        default=0.0,
+        help=(
+            "Ingresa un valor en dinero para redondear el descuento hacia abajo al múltiplo más cercano.\n"
+            "Ejemplo: con $100 COP, un descuento de $150 COP se convierte en $100 COP.\n"
+            "Usa 0 para desactivar este redondeo."
+        )
+    )
 
     discount_max = fields.Float(
         # string="Discount limit",
