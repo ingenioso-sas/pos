@@ -20,6 +20,7 @@
                         <group>
                             <field name="pp_order" />
                             <field name="rounding" />
+                            <field name="allow_points_on_redemption" />
                         </group>
                     </group>
                     <!--<separator string="Rules" colspan="4" />-->

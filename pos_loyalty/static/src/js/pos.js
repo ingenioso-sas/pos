@@ -24,7 +24,7 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 condition: function(self) {
                     return Boolean(self.config.loyalty_id[0]);
                 },
-                fields: ["name", "pp_currency", "pp_product", "pp_order", "rounding"],
+                fields: ["name", "pp_currency", "pp_product", "pp_order", "rounding", "allow_points_on_redemption"],
                 domain: function(self) {
                     return [["id", "=", self.config.loyalty_id[0]]];
                 },
@@ -248,6 +248,12 @@ odoo.define("pos_loyalty.loyalty_program", function(require) {
                 rounding
             );
             total_points += round_pr(this.pos.loyalty.pp_order, rounding);
+
+            // Final check for the new business rule
+            var has_redeemed_rewards = this.get_spent_points() > 0;
+            if (has_redeemed_rewards && !this.pos.loyalty.allow_points_on_redemption) {
+                total_points = 0;
+            }
 
             return total_points;
         },

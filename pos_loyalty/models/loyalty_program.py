@@ -60,6 +60,15 @@ class LoyaltyProgram(models.Model):
         translate=True,
     )
 
+    allow_points_on_redemption = fields.Boolean(
+        string="Permitir ganar puntos al canjear",
+        help=(
+            "Si se activa, el cliente gana puntos sobre el valor pagado incluso al usar recompensas.\n"
+            "Si se desactiva, no se ganan puntos cuando se canjea una recompensa."
+        ),
+        default=True
+    )
+
     rule_ids = fields.One2many(
         comodel_name="loyalty.rule",
         inverse_name="loyalty_program_id",

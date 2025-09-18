@@ -34,10 +34,12 @@ class PosOrder(models.Model):
         product_sold = 0.0
         total_sold = 0.0
         reward_discount_total = 0.0
+        has_redeemed_rewards = False
 
         for line in self.lines:
             # Case 1: The line is a reward, calculate spent points
             if line.reward_id:
+                has_redeemed_rewards = True
                 reward = line.reward_id
                 if reward.type == "gift":
                     points_spent += float_round(
@@ -112,6 +114,10 @@ class PosOrder(models.Model):
         points_won += float_round(
             loyalty.pp_order, precision_rounding=rounding, rounding_method="UP"
         )
+
+        # Final check for the new business rule
+        if has_redeemed_rewards and not loyalty.allow_points_on_redemption:
+            points_won = 0
 
         return points_won, points_spent
 
