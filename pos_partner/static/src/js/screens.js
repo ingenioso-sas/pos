@@ -2,18 +2,46 @@ odoo.define("pos_partner.screens", function(require) {
     "use strict";
 
     var screens = require("point_of_sale.screens");
-    // Var gui = require('point_of_sale.gui')
+    var gui = require('point_of_sale.gui');
+    var core = require('web.core');
+    var _t = core._t;
 
-    //    var QWeb = core.qweb;
-    //    var _t = core._t;
+    screens.PaymentScreenWidget.include({
+        validate_order: function(force_validation) {
+            var order = this.pos.get_order();
+            var client = order.get_client();
+
+            // Use the variable name you chose: 'pos_require_customer_id'
+            if (this.pos.config.pos_require_customer_id && client && !client.vat) {
+                this.gui.show_popup('error', {
+                    'title': _t('Identificación del cliente requerida'),
+                    'body': _t("Debes registrar la identificación del cliente antes de continuar con la venta."),
+                });
+                return;
+            }
+            this._super(force_validation);
+        }
+    });
 
     screens.ClientListScreenWidget.include({
+        save_client_details: function(partner) {
+            var vat_value = this.$('.client-details-contents input[name="vat"]').val();
+            if (this.pos.config.pos_require_customer_id && !vat_value) {
+                this.gui.show_popup('error', {
+                    'title': _t('Identificación del cliente requerida'),
+                    'body': _t("Debes ingresar el número de identificación del cliente para poder guardar."),
+                });
+                return;
+            }            
+            this._super(partner);
+        },
+        
         line_select: function(event, $line, id) {
             try {
                 var partner = this.pos.db.get_partner_by_id(id);
                 const datebirt = new Date(partner.fecha_nac);
                 const datenow = new Date();
-                // Verificar si es el cumpleaños
+                // Check for birthday
                 if (
                     datebirt.getUTCDate() === datenow.getUTCDate() &&
                     datebirt.getUTCMonth() === datenow.getUTCMonth()
@@ -25,49 +53,34 @@ odoo.define("pos_partner.screens", function(require) {
             }
             return this._super(event, $line, id);
         },
+
         confetti_start: function() {
             var self = this;
             if (!this.confetti) {
                 this.confetti_init();
             }
-            console.log("self.confetti");
-            console.log(this.confetti);
-
             this.confetti.start();
             setTimeout(function() {
                 self.confetti.stop();
             }, 5000);
         },
+
         confetti_init: function() {
             var self = this;
             self.confetti = {
-                // Set max confetti count
                 maxCount: 100,
-                // Set the particle animation speed
                 speed: 1,
-                // The confetti animation frame interval in milliseconds
                 frameInterval: 15,
-                // The alpha opacity of the confetti (between 0 and 1, where 1 is opaque and 0 is invisible)
                 alpha: 1.0,
-                // Whether to use gradients for the confetti particles
                 gradient: false,
-                // Call to start confetti animation (with optional timeout in milliseconds, and optional min and max random confetti count)
                 start: null,
-                // Call to stop adding confetti
                 stop: null,
-                // Call to start or stop the confetti animation depending on whether it's already running
                 toggle: null,
-                // Call to freeze confetti animation
                 pause: null,
-                // Call to unfreeze confetti animation
                 resume: null,
-                // Call to toggle whether the confetti animation is paused
                 togglePause: null,
-                // Call to stop the confetti animation and remove all confetti immediately
                 remove: null,
-                // Call and returns true or false depending on whether the confetti animation is paused
                 isPaused: null,
-                // Call and returns true or false depending on whether the animation is running
                 isRunning: null,
             };
 
@@ -115,7 +128,6 @@ odoo.define("pos_partner.screens", function(require) {
             }
 
             function drawParticles(context) {
-                // Verifcar si la inicialización esta bien
                 var particle = [];
                 let x = 0,
                     x2 = 0,
