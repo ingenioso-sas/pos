@@ -17,9 +17,30 @@ odoo.define('pos_pending_orders_mgmt.custom_screen', function (require) {
         start: function () {
             var self = this;
             this._super();
+
+            var long_click_timer = null;
+
+            this.$el.on('mousedown', function (event) {
+                // Only for left click
+                if (event.which !== 1) return;
+
+                long_click_timer = setTimeout(function () {
+                    self.gui.show_screen('pending_orders');
+                    long_click_timer = null;
+                }, 3000);
+            });
+
+            this.$el.on('mouseup mouseleave', function () {
+                if (long_click_timer) {
+                    clearTimeout(long_click_timer);
+                    long_click_timer = null;
+                }
+            });
+
+            // Prevent context menu to avoid interference if user still tries right click
             this.$el.on('contextmenu', function (event) {
                 event.preventDefault();
-                self.gui.show_screen('pending_orders');
+                //self.gui.show_screen('pending_orders');
             });
         },
     });
