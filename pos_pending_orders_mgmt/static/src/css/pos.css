@@ -1,13 +1,13 @@
 .pos .pending-orders-screen .pending-order-list-contents .button {
-    padding: 10px;
-    margin: 5px;
+    padding: 5px;
+    margin: 2px;
     cursor: pointer;
     border-radius: 4px;
     background-color: #f0f0f0;
     transition: background-color 0.2s;
     display: inline-block;
-    height: 40px;
-    width: 40px;
+    height: 32px;
+    width: 32px;
     text-align: center;
     line-height: normal;
     border: 1px solid #ccc;
@@ -18,7 +18,7 @@
 }
 
 .pos .pending-orders-screen .pending-order-list-contents .button i {
-    font-size: 18px;
+    font-size: 16px;
     color: #444;
 }
 
@@ -36,15 +36,49 @@
 
 .pos .pending-orders-screen .client-list th,
 .pos .pending-orders-screen .client-list td {
-    padding: 10px;
+    padding: 5px 8px;
     vertical-align: middle;
+    font-size: 14px;
 }
 
 .pos .pending-orders-screen .top-content .searchbox {
-    margin-left: 20px;
+    margin-left: 10px;
     flex-grow: 1;
 }
 
 .pos .pending-orders-screen .top-content .searchbox input {
-    width: 80%;
+    width: 90%;
+}
+
+/* Responsiveness */
+@media screen and (max-width: 768px) {
+    .pos .pending-orders-screen .col-date {
+        display: none;
+    }
+
+    .pos .pending-orders-screen .col-customer {
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .pos .pending-orders-screen .col-ref {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pos .pending-orders-screen .pending-order-list-contents .button {
+        height: 28px;
+        width: 28px;
+        padding: 4px;
+    }
+
+    .pos .pending-orders-screen .pending-order-list-contents .button i {
+        font-size: 14px;
+    }
 }

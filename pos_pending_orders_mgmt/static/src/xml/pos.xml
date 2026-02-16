@@ -21,10 +21,11 @@
                                     <table class="client-list">
                                         <thead>
                                             <tr>
-                                                <th>Ref.</th>
-                                                <th>Date</th>
-                                                <th>Amount</th>
-                                                <th>Actions</th>
+                                                <th class="col-ref">Ref.</th>
+                                                <th class="col-date">Date</th>
+                                                <th class="col-customer">Customer</th>
+                                                <th class="col-amount">Amount</th>
+                                                <th class="col-actions">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody class="pending-order-list-contents">
@@ -41,10 +42,11 @@
 
     <t t-name="PendingOrderLine">
         <tr class='order-line' t-att-data-id='order.id'>
-            <td><t t-esc='order.data.name' /></td>
-            <td><t t-esc='order.data.creation_date' /></td>
-            <td><t t-esc='widget.format_currency(order.data.amount_total)' /></td>
-            <td>
+            <td class="col-ref"><t t-esc='order.data.name' /></td>
+            <td class="col-date"><t t-esc='order.data.creation_date' /></td>
+            <td class="col-customer"><t t-esc='partner_name' /></td>
+            <td class="col-amount"><t t-esc='widget.format_currency(order.data.amount_total)' /></td>
+            <td class="col-actions">
                 <span class='button retry-order' title='Retry Send'>
                     <i class='fa fa-refresh'></i>
                 </span>

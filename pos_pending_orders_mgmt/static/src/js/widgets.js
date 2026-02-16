@@ -54,9 +54,18 @@ odoo.define('pos_pending_orders_mgmt.custom_screen', function (require) {
             contents.empty();
 
             orders.forEach(function (order_data) {
+                var partner_name = _t('Unknown Customer');
+                if (order_data.data.partner_id) {
+                    var partner = self.pos.db.get_partner_by_id(order_data.data.partner_id);
+                    if (partner) {
+                        partner_name = partner.name;
+                    }
+                }
+
                 var orderline = QWeb.render('PendingOrderLine', {
                     widget: self,
                     order: order_data,
+                    partner_name: partner_name,
                 });
                 var $orderline = $(orderline);
 
