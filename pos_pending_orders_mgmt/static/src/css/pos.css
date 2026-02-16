@@ -1,0 +1,50 @@
+.pos .pending-orders-screen .pending-order-list-contents .button {
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+    transition: background-color 0.2s;
+    display: inline-block;
+    height: 40px;
+    width: 40px;
+    text-align: center;
+    line-height: normal;
+    border: 1px solid #ccc;
+}
+
+.pos .pending-orders-screen .pending-order-list-contents .button:hover {
+    background-color: #e0e0e0;
+}
+
+.pos .pending-orders-screen .pending-order-list-contents .button i {
+    font-size: 18px;
+    color: #444;
+}
+
+.pos .pending-orders-screen .pending-order-list-contents .button.retry-order:hover i {
+    color: #4c8a2b;
+}
+
+.pos .pending-orders-screen .pending-order-list-contents .button.load-order:hover i {
+    color: #337ab7;
+}
+
+.pos .pending-orders-screen .pending-order-list-contents .button.remove-order:hover i {
+    color: #d9534f;
+}
+
+.pos .pending-orders-screen .client-list th,
+.pos .pending-orders-screen .client-list td {
+    padding: 10px;
+    vertical-align: middle;
+}
+
+.pos .pending-orders-screen .top-content .searchbox {
+    margin-left: 20px;
+    flex-grow: 1;
+}
+
+.pos .pending-orders-screen .top-content .searchbox input {
+    width: 80%;
+}
