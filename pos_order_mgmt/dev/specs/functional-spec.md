@@ -1,0 +1,41 @@
+# Especificación Funcional - pos_order_mgmt
+
+## 1. Propósito y Alcance
+Este módulo extiende la funcionalidad del frontend del Punto de Venta (PoS) de Odoo para permitir la gestión de pedidos antiguos. Las capacidades principales incluyen la visualización, reimpresión, duplicación y devolución de pedidos históricos directamente desde la interfaz del POS.
+
+## 2. Actores y Roles
+- **Cajero del PoS:** Puede buscar pedidos antiguos, reimprimir tickets, duplicar pedidos o realizar devoluciones.
+- **Administrador de Ventas:** Configura los permisos y límites de carga de pedidos en la configuración del PoS.
+
+## 3. Capacidades y Casos de Uso
+
+### CU-01: Visualización de Pedidos Históricos (✅✅✅ THREE_WAY)
+- El sistema muestra un botón con icono de carrito de compras en la barra superior derecha.
+- Al hacer clic, se abre una pantalla con la lista de pedidos.
+- Los pedidos se cargan inicialmente según la configuración de "Maximum orders to load".
+
+### CU-02: Búsqueda y Paginación (✅✅ VERIFIED)
+- Permite buscar pedidos por referencia (✅✅ VERIFIED).
+- **Extensión:** También permite buscar por nombre del pedido, cliente o productos (🔸 CODE_ONLY).
+- El sistema soporta paginación si el número de resultados excede el límite configurado (🔸 CODE_ONLY).
+
+### CU-03: Reimpresión de Tickets (✅✅✅ THREE_WAY)
+- Permite imprimir un duplicado de un pedido antiguo.
+- El ticket impreso incluye una etiqueta de "DUPLICATE" para evitar confusiones (🔸 CODE_ONLY).
+
+### CU-04: Duplicación de Pedidos (✅✅✅ THREE_WAY)
+- Permite crear un nuevo pedido en la sesión actual basándose en los productos de un pedido antiguo.
+
+### CU-05: Devolución de Pedidos (✅✅✅ THREE_WAY)
+- Permite crear un pedido de reembolso (cantidades negativas) basado en un pedido antiguo.
+- Mantiene la trazabilidad del pedido original (✅✅ VERIFIED).
+
+## 4. Reglas de Negocio
+- **RN-01 (Conexión):** Se requiere conexión a internet (online) para buscar o cargar detalles de pedidos que no estén en la caché local (✅✅ VERIFIED).
+- **RN-02 (Productos Desconocidos):** No se puede cargar un pedido si contiene productos que no están disponibles en la configuración actual del PoS (🔸 CODE_ONLY).
+- **RN-03 (Trazabilidad):** Las devoluciones deben quedar vinculadas al pedido original mediante el campo `returned_order_id` (✅✅ VERIFIED).
+
+## 5. Configuración (✅✅✅ THREE_WAY)
+- **Habilitar Gestión de Pedidos:** Activa/desactiva la funcionalidad global.
+- **Máximo de Pedidos a Cargar:** Define cuántos pedidos se cargan al inicio (por defecto 10).
+- **Permisos Específicos:** Flags para habilitar/deshabilitar individualmente Reimpresión, Devolución y Duplicación.
