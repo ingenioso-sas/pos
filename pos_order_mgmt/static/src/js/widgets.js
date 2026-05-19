@@ -343,6 +343,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             } else if (["return"].indexOf(action) !== -1) {
                 order.returned_order_id = order_data.id;
                 order.returned_order_reference = order_data.pos_reference;
+                order.original_payments = order_data.statement_ids;
             }
 
             // Get Date
@@ -580,6 +581,75 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         prepend: ".pos-rightheader",
         args: {
             label: "All Orders",
+        },
+    });
+
+    screens.PaymentScreenWidget.include({
+        click_paymentmethods: function (id) {
+            var order = this.pos.get_order();
+            if (order.returned_order_id && order.original_payments) {
+                var is_allowed = _.find(order.original_payments, function (p) {
+                    return p.payment_method_id === id;
+                });
+                if (!is_allowed) {
+                    this.gui.show_popup("error", {
+                        title: _t("Payment Method Not Allowed"),
+                        body: _t(
+                            "You can only use payment methods used in the original order."
+                        ),
+                    });
+                    return;
+                }
+            }
+            this._super(id);
+        },
+        order_is_valid: function (force_validation) {
+            var order = this.pos.get_order();
+            if (order.returned_order_id && order.original_payments) {
+                var paymentlines = order.get_paymentlines();
+                var amounts_by_method = {};
+                for (var i = 0; i < paymentlines.length; i++) {
+                    var line = paymentlines[i];
+                    var mid = line.payment_method.id;
+                    amounts_by_method[mid] =
+                        (amounts_by_method[mid] || 0) + line.get_amount();
+                }
+
+                for (var mid in amounts_by_method) {
+                    var original = _.find(order.original_payments, function (p) {
+                        return p.payment_method_id === parseInt(mid, 10);
+                    });
+                    if (
+                        original &&
+                        Math.abs(amounts_by_method[mid]) >
+                            Math.abs(original.amount) + 0.0001
+                    ) {
+                        var payment_method = this.pos.payment_methods_by_id[mid];
+                        this.gui.show_popup("error", {
+                            title: _t("Amount Too High"),
+                            body: _.str.sprintf(
+                                _t(
+                                    "The refunded amount for %s (%s) cannot exceed the original amount (%s)."
+                                ),
+                                payment_method.name,
+                                this.format_currency(Math.abs(amounts_by_method[mid])),
+                                this.format_currency(original.amount)
+                            ),
+                        });
+                        return false;
+                    }
+                }
+            }
+            if (order.returned_order_id && order.get_due() !== 0) {
+                this.gui.show_popup("error", {
+                    title: _t("Incomplete Refund"),
+                    body: _t(
+                        "The total amount of the refund must be exactly the same as the total of the products returned."
+                    ),
+                });
+                return false;
+            }
+            return this._super(force_validation);
         },
     });
 

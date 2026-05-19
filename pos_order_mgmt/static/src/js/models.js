@@ -13,17 +13,20 @@ odoo.define("pos_order_mgmt.models", function(require) {
             order_super.init_from_JSON.apply(this, arguments);
             this.returned_order_id = json.returned_order_id;
             this.returned_order_reference = json.returned_order_reference;
+            this.original_payments = json.original_payments;
         },
         export_as_JSON: function() {
             var res = order_super.export_as_JSON.apply(this, arguments);
             res.returned_order_id = this.returned_order_id;
             res.returned_order_reference = this.returned_order_reference;
+            res.original_payments = this.original_payments;
             return res;
         },
         export_for_printing: function() {
             var res = order_super.export_for_printing.apply(this, arguments);
             res.returned_order_id = this.returned_order_id;
             res.returned_order_reference = this.returned_order_reference;
+            res.original_payments = this.original_payments;
             return res;
         },
     });

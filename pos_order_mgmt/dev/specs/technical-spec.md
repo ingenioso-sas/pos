@@ -46,6 +46,12 @@ El módulo sigue la arquitectura estándar de Odoo 13 (MVC). Extiende modelos ex
 ### 4.2. Componentes UI (Widgets)
 - `ListOrderButtonWidget`: Botón en el header para abrir la lista de pedidos.
 - `OrderListScreenWidget`: Pantalla principal de gestión. Maneja búsqueda reactiva (timeout 70ms), paginación y acciones.
+    - Se extiende `_prepare_order_from_order_data` para guardar `original_payments` en el objeto `order` durante una devolución.
+- `PaymentScreenWidget`: Extendido para implementar validaciones en devoluciones.
+    - `click_paymentmethods(id)`: Bloquea métodos de pago no presentes en la orden original.
+    - `order_is_valid()`: 
+        - Valida que el monto reembolsado por cada método no exceda el original.
+        - Valida que el balance pendiente (`get_due()`) sea exactamente cero para devoluciones.
 - `ReceiptScreenWidget`: Extendido para manejar la impresión de pedidos "recargados" y añadir la etiqueta de duplicado.
 
 ## 5. Plantillas QWeb (XML)

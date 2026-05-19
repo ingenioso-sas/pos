@@ -34,6 +34,9 @@ Este módulo extiende la funcionalidad del frontend del Punto de Venta (PoS) de 
 - **RN-01 (Conexión):** Se requiere conexión a internet (online) para buscar o cargar detalles de pedidos que no estén en la caché local (✅✅ VERIFIED).
 - **RN-02 (Productos Desconocidos):** No se puede cargar un pedido si contiene productos que no están disponibles en la configuración actual del PoS (🔸 CODE_ONLY).
 - **RN-03 (Trazabilidad):** Las devoluciones deben quedar vinculadas al pedido original mediante el campo `returned_order_id` (✅✅ VERIFIED).
+- **RN-04 (Restricción de Métodos de Pago en Devoluciones):** En una devolución, solo se permiten los métodos de pago utilizados en la venta original (🆕 NEW).
+- **RN-05 (Límite de Monto por Método de Pago):** En una devolución, el monto reembolsado por cada método de pago no puede exceder el monto pagado originalmente con ese mismo método (🆕 NEW).
+- **RN-06 (Balance Exacto en Devoluciones):** El monto total de los pagos en una devolución debe ser exactamente igual al total de la orden (balance cero). No se permiten reembolsos parciales de dinero si los productos fueron devueltos en su totalidad, ni sobre-pagos (🆕 NEW).
 
 ## 5. Configuración (✅✅✅ THREE_WAY)
 - **Habilitar Gestión de Pedidos:** Activa/desactiva la funcionalidad global.
