@@ -91,7 +91,9 @@ odoo.define('pos_pending_orders_mgmt.custom_screen', function (require) {
                 var $orderline = $(orderline);
 
                 $orderline.find('.retry-order').click(function () {
-                    self.pos.push_order(order_data.data).then(function () {
+                    var order = new models.Order({}, { pos: self.pos });
+                    order.init_from_JSON(order_data.data);
+                    self.pos.push_order(order).then(function () {
                         self.render_list();
                     });
                 });
