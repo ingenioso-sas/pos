@@ -43,3 +43,58 @@
 .pos .orderlist-screen .top-content .searchbox input {
     width: 100%;
 }
+
+.pos .orderlist-screen .order-line {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.pos .orderlist-screen .order-line:hover {
+    background-color: #f0f0f0;
+}
+
+.pos .orderlist-screen .order-line.highlight {
+    background-color: #7f82ac !important;
+    color: white;
+}
+
+.pos .orderlist-screen .order-line-details {
+    background-color: #f9f9f9;
+}
+
+.pos .orderlist-screen .order-line-details.o_hidden {
+    display: none;
+}
+
+.pos .orderlist-screen .order-details-container {
+    padding: 15px;
+    border-left: 5px solid #7f82ac;
+    margin: 5px 20px;
+    background: white;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+
+.pos .orderlist-screen .order-details-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.pos .orderlist-screen .order-details-table th {
+    text-align: left;
+    border-bottom: 2px solid #eee;
+    padding: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+.pos .orderlist-screen .order-details-table td {
+    padding: 8px 5px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+.pos .orderlist-screen .loader {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+}
