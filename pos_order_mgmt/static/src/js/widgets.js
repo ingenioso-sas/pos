@@ -624,17 +624,11 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                 "change:selectedOrder",
                 function () {
                     var order = self.pos.get_order();
+                    var $username = self.$(".username");
                     if (order && order.returned_order_id) {
-                        self.$(".username")
-                            .off("click")
-                            .css({ "pointer-events": "none", opacity: "0.5" });
+                        $username.css({ "pointer-events": "none", opacity: "0.5" });
                     } else {
-                        self.$(".username").css({
-                            "pointer-events": "auto",
-                            opacity: "1",
-                        });
-                        // Re-render chrome to restore original click events
-                        self.render_username();
+                        $username.css({ "pointer-events": "auto", opacity: "1" });
                     }
                 },
                 this
@@ -648,17 +642,17 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             var order = this.pos.get_order();
             if (order && order.returned_order_id) {
                 // Disable Invoice button
-                this.$(".js_invoice").off("click").css({
+                this.$(".js_invoice").css({
                     "pointer-events": "none",
                     opacity: "0.5",
                 });
                 // Disable Electronic Invoice button (if exists)
-                this.$(".js_electronic_invoice").off("click").css({
+                this.$(".js_electronic_invoice").css({
                     "pointer-events": "none",
                     opacity: "0.5",
                 });
                 // Disable Cashier button in Payment Screen (some custom layouts have it)
-                this.$(".js_cashier").off("click").css({
+                this.$(".js_cashier").css({
                     "pointer-events": "none",
                     opacity: "0.5",
                 });
