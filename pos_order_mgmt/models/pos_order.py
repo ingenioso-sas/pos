@@ -140,6 +140,9 @@ class PosOrder(models.Model):
             "line_ids": order_lines,
             "statement_ids": payment_lines,
             "to_invoice": bool(self.to_invoice),
+            "to_electronic_invoice": bool(getattr(self, "to_electronic_invoice", False)) or bool(getattr(self, "ei_is_dian_document", False)),
+            "user_id": self.user_id.id,
+            "employee_id": getattr(self, "employee_id", self.env['hr.employee']).id,
             "returned_order_id": self.returned_order_id.id,
             "returned_order_reference": self.returned_order_reference,
         }

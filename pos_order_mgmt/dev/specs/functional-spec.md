@@ -37,6 +37,8 @@ Este módulo extiende la funcionalidad del frontend del Punto de Venta (PoS) de 
 - **RN-04 (Restricción de Métodos de Pago en Devoluciones):** En una devolución, solo se permiten los métodos de pago utilizados en la venta original (🆕 NEW).
 - **RN-05 (Límite de Monto por Método de Pago):** En una devolución, el monto reembolsado por cada método de pago no puede exceder el monto pagado originalmente con ese mismo método (🆕 NEW).
 - **RN-06 (Balance Exacto en Devoluciones):** El monto total de los pagos en una devolución debe ser exactamente igual al total de la orden (balance cero). No se permiten reembolsos parciales de dinero si los productos fueron devueltos en su totalidad, ni sobre-pagos (🆕 NEW).
+- **RN-07 (Vendedor Predefinido):** En una devolución, el vendedor (cajero) se asigna automáticamente al mismo que realizó la venta original y no puede ser cambiado (🆕 NEW).
+- **RN-08 (Facturación Bloqueada):** El tipo de facturación (normal o electrónica) se hereda de la orden original y se bloquea su edición en la pantalla de pago (🆕 NEW).
 
 ## 5. Configuración (✅✅✅ THREE_WAY)
 - **Habilitar Gestión de Pedidos:** Activa/desactiva la funcionalidad global.

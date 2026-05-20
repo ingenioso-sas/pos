@@ -333,6 +333,35 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             if (["return", "copy"].indexOf(action) !== -1) {
                 // If previous order was invoiced, we need a refund too
                 order.set_to_invoice(order_data.to_invoice);
+                if (order_data.to_electronic_invoice !== undefined) {
+                    if (order.set_to_electronic_invoice) {
+                        order.set_to_electronic_invoice(order_data.to_electronic_invoice);
+                    } else {
+                        order.to_electronic_invoice = order_data.to_electronic_invoice;
+                    }
+                }
+            }
+
+            // Get Salesperson
+            if (["return"].indexOf(action) !== -1) {
+                var cashier = false;
+                if (order_data.employee_id && this.pos.employees) {
+                    cashier = _.find(this.pos.employees, function (e) {
+                        return e.id === order_data.employee_id;
+                    });
+                }
+                if (!cashier && order_data.user_id) {
+                    if (this.pos.employees) {
+                        cashier = _.find(this.pos.employees, function (e) {
+                            return e.user_id && e.user_id[0] === order_data.user_id;
+                        });
+                    }
+                }
+                if (cashier) {
+                    order.set_cashier(cashier);
+                } else if (order_data.user_id) {
+                    order.user_id = order_data.user_id;
+                }
             }
 
             // Get returned Order
@@ -584,7 +613,50 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
     });
 
+    chrome.Chrome.include({
+        renderElement: function () {
+            this._super();
+            var self = this;
+            this.pos.on(
+                "change:selectedOrder",
+                function () {
+                    var order = self.pos.get_order();
+                    if (order && order.returned_order_id) {
+                        self.$(".username")
+                            .off("click")
+                            .css({ "pointer-events": "none", opacity: "0.5" });
+                    } else {
+                        // In standard Odoo 13, the bind is done in start() or during render.
+                        // We might need to re-bind if it was disabled.
+                    }
+                },
+                this
+            );
+        },
+    });
+
     screens.PaymentScreenWidget.include({
+        renderElement: function () {
+            this._super();
+            var order = this.pos.get_order();
+            if (order && order.returned_order_id) {
+                // Disable Invoice button
+                this.$(".js_invoice").off("click").css({
+                    "pointer-events": "none",
+                    opacity: "0.5",
+                });
+                // Disable Electronic Invoice button (if exists)
+                this.$(".js_electronic_invoice").off("click").css({
+                    "pointer-events": "none",
+                    opacity: "0.5",
+                });
+                // Disable Cashier button in Payment Screen (some custom layouts have it)
+                this.$(".js_cashier").off("click").css({
+                    "pointer-events": "none",
+                    opacity: "0.5",
+                });
+            }
+        },
         click_paymentmethods: function (id) {
             var order = this.pos.get_order();
             if (order.returned_order_id && order.original_payments) {

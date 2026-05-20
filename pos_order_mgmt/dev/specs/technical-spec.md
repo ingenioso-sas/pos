@@ -52,6 +52,7 @@ El módulo sigue la arquitectura estándar de Odoo 13 (MVC). Extiende modelos ex
     - `order_is_valid()`: 
         - Valida que el monto reembolsado por cada método no exceda el original.
         - Valida que el balance pendiente (`get_due()`) sea exactamente cero para devoluciones.
+    - `renderElement()`: Deshabilita los botones de factura, factura electrónica y cambio de vendedor si es una devolución.
 - `ReceiptScreenWidget`: Extendido para manejar la impresión de pedidos "recargados" y añadir la etiqueta de duplicado.
 
 ## 5. Plantillas QWeb (XML)
