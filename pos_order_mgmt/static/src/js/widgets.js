@@ -358,7 +358,10 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     }
                 }
                 if (cashier) {
-                    order.set_cashier(cashier);
+                    order.employee_id = cashier.id;
+                    if (cashier.user_id) {
+                        order.user_id = cashier.user_id[0];
+                    }
                 } else if (order_data.user_id) {
                     order.user_id = order_data.user_id;
                 }
@@ -626,8 +629,12 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                             .off("click")
                             .css({ "pointer-events": "none", opacity: "0.5" });
                     } else {
-                        // In standard Odoo 13, the bind is done in start() or during render.
-                        // We might need to re-bind if it was disabled.
+                        self.$(".username").css({
+                            "pointer-events": "auto",
+                            opacity: "1",
+                        });
+                        // Re-render chrome to restore original click events
+                        self.render_username();
                     }
                 },
                 this
