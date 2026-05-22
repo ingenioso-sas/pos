@@ -6,37 +6,46 @@ El módulo sigue la arquitectura estándar de Odoo 13 (MVC). Extiende modelos ex
 ## 2. Modelo de Datos (PostgreSQL)
 
 ### 2.1. `pos.config` (Extensión)
-| Campo | Tipo | Descripción | Confianza |
-|-------|------|-------------|-----------|
-| `iface_order_mgmt` | Boolean | Habilita el botón de gestión en el POS | ✅✅✅ |
-| `iface_reprint_done_order` | Boolean | Permite reimprimir pedidos finalizados | ✅✅✅ |
-| `iface_return_done_order` | Boolean | Permite devolver pedidos finalizados | ✅✅✅ |
-| `iface_copy_done_order` | Boolean | Permite duplicar pedidos finalizados | ✅✅✅ |
-| `iface_load_done_order_max_qty` | Integer | Cantidad máx. a cargar/tamaño de página | ✅✅✅ |
+| Campo | Tipo | Descripción | Ayuda / Origen | Confianza |
+|-------|------|-------------|----------------|-----------|
+| `iface_order_mgmt` | Boolean | Habilita el botón de gestión en el POS | Activa el icono de carrito en el POS. Config: *Punto de Venta > Configuración > [POS] > Order Management*. | ✅✅✅ |
+| `iface_reprint_done_order` | Boolean | Permite reimprimir pedidos finalizados | Habilita botón de impresora en la lista. Config: *[POS] > Reprint Orders*. | ✅✅✅ |
+| `iface_return_done_order` | Boolean | Permite devolver pedidos finalizados | Habilita botón de flecha curva en la lista. Config: *[POS] > Return Orders*. | ✅✅✅ |
+| `iface_copy_done_order` | Boolean | Permite duplicar pedidos finalizados | Habilita botón de duplicado en la lista. Config: *[POS] > Duplicate Orders*. | ✅✅✅ |
+| `iface_load_done_order_max_qty` | Integer | Cantidad máx. a cargar/tamaño de página | Define cuántos pedidos se traen al iniciar y el tamaño de página. Config: *[POS] > Maximum Orders to load*. | ✅✅✅ |
 
 ### 2.2. `pos.order` (Extensión)
-| Campo | Tipo | Descripción | Confianza |
-|-------|------|-------------|-----------|
-| `returned_order_id` | Many2one | Vínculo al pedido original en devoluciones | ✅✅ |
-| `returned_order_reference` | Char | Referencia del pedido original (relacionado) | ✅✅ |
-| `refund_order_ids` | One2many | Pedidos de reembolso generados desde este | 🔸 |
-| `refund_order_qty` | Integer | Cantidad de reembolsos (computado) | 🔸 |
+| Campo | Tipo | Descripción | Ayuda / Origen | Confianza |
+|-------|------|-------------|----------------|-----------|
+| `returned_order_id` | Many2one | Vínculo al pedido original en devoluciones | Se asigna automáticamente al crear una devolución desde el frontend. | ✅✅ |
+| `returned_order_reference` | Char | Referencia del pedido original (relacionado) | Se muestra en el ticket de devolución. Viene de `returned_order_id.pos_reference`. | ✅✅ |
+| `refund_order_ids` | One2many | Pedidos de reembolso generados desde este | Lista de todos los reembolsos vinculados a la venta original. | 🔸 |
+| `refund_order_qty` | Integer | Cantidad de reembolsos (computado) | Conteo de registros en `refund_order_ids`. | 🔸 |
 
 ## 3. APIs y Endpoints (Odoo RPC)
 
 ### 3.1. `search_done_orders_for_pos(query, pos_session_id, page)`
 - **Modelo:** `pos.order`
 - **Descripción:** Busca pedidos que cumplan los criterios de filtro y paginación.
+- **Parámetros:**
+    - `query` (String): Término de búsqueda (Nombre, Ref, Cliente, Producto).
+    - `pos_session_id` (Integer): ID de la sesión actual del POS (para obtener la configuración).
+    - `page` (Integer): Número de página solicitado (empieza en 0).
 - **Filtros aplicados:**
     - `state`: 'paid', 'done', 'invoiced'.
     - Si no hay query: filtra por `config_id` de la sesión actual.
     - Si hay query: busca en `name`, `pos_reference`, `partner_id.display_name`, `lines.product_id.name`.
-- **Retorno:** Objeto con `items` y metadatos de paginación.
+- **Retorno:** Objeto con `items` (lista de pedidos) y metadatos de paginación (`current_page`, `next_page`, `total_items`, `total_pages`, `page_size`).
 
 ### 3.2. `load_done_order_for_pos(order_id)`
 - **Modelo:** `pos.order`
 - **Descripción:** Prepara y retorna los datos detallados de un pedido y sus líneas para cargarlo en el frontend.
-- **Campos retornados:** `id`, `date_order`, `pos_reference`, `name`, `partner_id`, `fiscal_position`, `line_ids` (con `product_id`, `qty`, `price_unit`, `discount`, `pack_lot_names`), `statement_ids`.
+- **Parámetros:**
+    - `order_id` (Integer): ID del pedido a cargar.
+- **Campos retornados:** 
+    - `id`, `date_order`, `pos_reference`, `name`, `partner_id`, `fiscal_position`.
+    - `line_ids`: Lista de líneas con `product_id`, `qty`, `price_unit`, `discount`, `pack_lot_names`.
+    - `statement_ids`: Lista de pagos con `journal_id`, `amount`, `payment_method_id`.
 
 ## 4. Frontend (Point of Sale JS)
 

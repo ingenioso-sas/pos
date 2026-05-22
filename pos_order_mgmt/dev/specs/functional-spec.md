@@ -41,6 +41,18 @@ Este módulo extiende la funcionalidad del frontend del Punto de Venta (PoS) de 
 - **RN-08 (Facturación Bloqueada):** El tipo de facturación (normal o electrónica) se hereda de la orden original y se bloquea su edición en la pantalla de pago (🆕 NEW).
 
 ## 5. Configuración (✅✅✅ THREE_WAY)
-- **Habilitar Gestión de Pedidos:** Activa/desactiva la funcionalidad global.
-- **Máximo de Pedidos a Cargar:** Define cuántos pedidos se cargan al inicio (por defecto 10).
-- **Permisos Específicos:** Flags para habilitar/deshabilitar individualmente Reimpresión, Devolución y Duplicación.
+
+Los siguientes campos se encuentran en *Punto de Venta > Configuración > Punto de Venta > [Nombre del POS] > Sección: Order Management*.
+
+- **Habilitar Gestión de Pedidos (`iface_order_mgmt`):** 
+    - *Qué es:* Un interruptor (booleano).
+    - *Uso:* Activa la funcionalidad completa del módulo. Si está apagado, el icono de carrito no aparecerá.
+    - *Origen:* Se configura manualmente por el administrador.
+- **Máximo de Pedidos a Cargar (`iface_load_done_order_max_qty`):** 
+    - *Qué es:* Un campo numérico (entero).
+    - *Uso:* Determina cuántos pedidos se cargan en la caché inicial y el tamaño de los bloques de búsqueda (paginación). Un valor alto puede ralentizar la carga inicial.
+    - *Origen:* Valor por defecto es 10.
+- **Permisos Específicos:** 
+    - *Reimpresión (`iface_reprint_done_order`):* Habilita el icono de impresora para obtener duplicados de tickets.
+    - *Devolución (`iface_return_done_order`):* Habilita el icono de retorno para crear reembolsos.
+    - *Duplicación (`iface_copy_done_order`):* Habilita el icono de copia para cargar productos en un nuevo pedido.
