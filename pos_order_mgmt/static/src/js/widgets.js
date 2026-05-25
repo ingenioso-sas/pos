@@ -678,6 +678,20 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
         order_is_valid: function (force_validation) {
             var order = this.pos.get_order();
+            var orderlines = order.get_orderlines();
+            for (var i = 0; i < orderlines.length; i++) {
+                var line = orderlines[i];
+                if (line.get_quantity() === 0) {
+                    this.gui.show_popup("error", {
+                        title: _t("Zero Quantity Line"),
+                        body: _.str.sprintf(
+                            _t("Product %s has zero quantity. You cannot have order lines with a quantity of zero (0)."),
+                            line.get_product().display_name
+                        ),
+                    });
+                    return false;
+                }
+            }
             if (order.returned_order_id && order.original_payments) {
                 var paymentlines = order.get_paymentlines();
                 var amounts_by_method = {};

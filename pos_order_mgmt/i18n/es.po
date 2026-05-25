@@ -243,6 +243,20 @@ msgstr ""
 msgid "Unknown Products"
 msgstr "Productos desconocidos"
 
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Zero Quantity Line"
+msgstr "Línea con cantidad en cero"
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Product %s has zero quantity. You cannot have order lines with a quantity of zero (0)."
+msgstr "El producto %s tiene cantidad en cero. No debería haber cantidades de líneas de órdenes en ceros (0)."
+
 #, fuzzy
 #~| msgid "Allow to load done orders in this POS"
 #~ msgid "Allow to duplicate done orders in this POS"
