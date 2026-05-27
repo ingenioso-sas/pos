@@ -5,10 +5,13 @@ odoo.define("pos_order_mgmt.models", function(require) {
     "use strict";
 
     var models = require("point_of_sale.models");
-
     var order_super = models.Order.prototype;
 
     models.Order = models.Order.extend({
+        initialize: function(attr, options) {
+            order_super.initialize.apply(this, arguments);
+            this.allowed_to_modify = false;
+        },
         init_from_JSON: function(json) {
             order_super.init_from_JSON.apply(this, arguments);
             this.returned_order_id = json.returned_order_id;

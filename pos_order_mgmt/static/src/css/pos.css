@@ -98,3 +98,163 @@
     padding: 20px;
     color: #888;
 }
+
+/* Custom styling for Order Confirmation/Modification Popup */
+.pos .order-confirm-modify-popup {
+    max-width: 500px;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    background: #ffffff;
+    overflow: hidden;
+    animation: popupAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popupAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-title {
+    background: linear-gradient(135deg, #e67e22, #d35400) !important;
+    color: #ffffff !important;
+    font-size: 20px !important;
+    font-weight: 600 !important;
+    padding: 15px 20px !important;
+    border-bottom: 2px solid #b33900;
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-body {
+    padding: 20px;
+    text-align: left;
+    color: #2c3e50;
+    font-family: inherit;
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-warning-card {
+    display: flex;
+    align-items: center;
+    background-color: #fdf2e9;
+    border-left: 5px solid #e67e22;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-warning-card .warning-icon {
+    font-size: 24px;
+    margin-right: 12px;
+    color: #d35400;
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-warning-card .warning-text strong {
+    font-size: 14px;
+    color: #d35400;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-warning-card .warning-text p {
+    font-size: 12.5px;
+    margin: 0;
+    line-height: 1.4;
+    color: #7f8c8d;
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-instructions {
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-instructions ul {
+    margin: 8px 0 12px 20px;
+    padding: 0;
+}
+
+.pos .order-confirm-modify-popup .confirm-modify-instructions li {
+    margin-bottom: 6px;
+}
+
+.pos .order-confirm-modify-popup .phrase-highlight {
+    background-color: #f2f4f4;
+    border: 1px dashed #bdc3c7;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: center;
+    color: #2c3e50;
+    margin-top: 10px;
+}
+
+.pos .order-confirm-modify-popup .phrase-highlight strong {
+    color: #c0392b;
+    font-size: 15px;
+    background-color: #fdebd0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #fadbd8;
+}
+
+.pos .order-confirm-modify-popup input[type="text"] {
+    width: calc(100% - 40px);
+    margin: 5px 20px 20px 20px;
+    box-sizing: border-box;
+    font-size: 16px;
+    padding: 10px 12px;
+    border: 2px solid #bdc3c7;
+    border-radius: 6px;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.pos .order-confirm-modify-popup input[type="text"]:focus {
+    border-color: #e67e22;
+    box-shadow: 0 0 8px rgba(230, 126, 34, 0.3);
+}
+
+.pos .order-confirm-modify-popup .footer {
+    border-top: 1px solid #ecf0f1;
+    padding: 10px 20px;
+    display: flex;
+    justify-content: flex-end;
+    background-color: #fafbfc;
+}
+
+.pos .order-confirm-modify-popup .footer .button {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.pos .order-confirm-modify-popup .footer .button.confirm {
+    background: linear-gradient(135deg, #e67e22, #d35400) !important;
+    color: white !important;
+    border: none;
+    margin-right: 10px;
+}
+
+.pos .order-confirm-modify-popup .footer .button.confirm:hover {
+    background: linear-gradient(135deg, #d35400, #b33900) !important;
+    transform: translateY(-1px);
+}
+
+.pos .order-confirm-modify-popup .footer .button.cancel {
+    background: #bdc3c7 !important;
+    color: #2c3e50 !important;
+    border: none;
+}
+
+.pos .order-confirm-modify-popup .footer .button.cancel:hover {
+    background: #95a5a6 !important;
+    color: white !important;
+    transform: translateY(-1px);
+}
