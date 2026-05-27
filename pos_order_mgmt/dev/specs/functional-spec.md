@@ -39,6 +39,8 @@ Este módulo extiende la funcionalidad del frontend del Punto de Venta (PoS) de 
 - **RN-06 (Balance Exacto en Devoluciones):** El monto total de los pagos en una devolución debe ser exactamente igual al total de la orden (balance cero). No se permiten reembolsos parciales de dinero si los productos fueron devueltos en su totalidad, ni sobre-pagos (🆕 NEW).
 - **RN-07 (Vendedor Predefinido):** En una devolución, el vendedor (cajero) se asigna automáticamente al mismo que realizó la venta original y no puede ser cambiado (🆕 NEW).
 - **RN-08 (Facturación Bloqueada):** El tipo de facturación (normal o electrónica) se hereda de la orden original y se bloquea su edición en la pantalla de pago (🆕 NEW).
+- **RN-09 (Validación de Cantidad Cero):** No se permite validar o pagar una orden si alguna línea tiene una cantidad de cero (0). Al intentar validar, se muestra una alerta indicando qué producto específico está en ceros y se detiene la validación (🆕 NEW).
+- **RN-10 (Modificación de Órdenes Pendientes):** Si se intenta realizar cualquier tipo de modificación (añadir productos, usar teclado numérico, etc.) en una orden que ha fallado su sincronización con el backend (que permanezca en la cola local de pendientes de sincronización en `pos.db.get_orders()`), el cajero debe confirmar explícitamente digitando `"modificar orden"` en un popup nativo de Odoo (TextInputPopupWidget) con un título explicativo. Si no confirma o cancela, la acción de clic es bloqueada limpiamente y se muestra una advertencia del POS (sin lanzar excepciones de Javascript ni trazas rojas en pantalla) (🆕 NEW).
 
 ## 5. Configuración (✅✅✅ THREE_WAY)
 

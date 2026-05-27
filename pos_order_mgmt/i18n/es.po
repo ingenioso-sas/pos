@@ -257,6 +257,27 @@ msgstr "Línea con cantidad en cero"
 msgid "Product %s has zero quantity. You cannot have order lines with a quantity of zero (0)."
 msgstr "El producto %s tiene cantidad en cero. No debería haber cantidades de líneas de órdenes en ceros (0)."
 
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Warning: Order pending synchronization. To edit it, type exactly 'modificar orden' and confirm. If you prefer not to modify it, cancel and create a new order:"
+msgstr "Advertencia: Orden pendiente de sincronización. Para editarla, escriba exactamente 'modificar orden' y confirme. Si prefiere no modificarla, cancele y cree una nueva orden:"
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Modificación rechazada"
+msgstr "Modificación rechazada"
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "No se ha confirmado la modificación. Debe crear una nueva orden para continuar."
+msgstr "No se ha confirmado la modificación. Debe crear una nueva orden para continuar."
+
 #, fuzzy
 #~| msgid "Allow to load done orders in this POS"
 #~ msgid "Allow to duplicate done orders in this POS"
