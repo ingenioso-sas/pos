@@ -16,14 +16,12 @@ odoo.define("pos_order_mgmt.models", function(require) {
             this.original_payments = json.original_payments;
             this.user_id = json.user_id;
             this.employee_id = json.employee_id;
-            this.to_electronic_invoice = json.to_electronic_invoice;
         },
         export_as_JSON: function() {
             var res = order_super.export_as_JSON.apply(this, arguments);
             res.returned_order_id = this.returned_order_id;
             res.returned_order_reference = this.returned_order_reference;
             res.original_payments = this.original_payments;
-            res.to_electronic_invoice = this.to_electronic_invoice;
             if (this.returned_order_id) {
                 if (this.user_id) {
                     res.user_id = this.user_id;
@@ -39,7 +37,6 @@ odoo.define("pos_order_mgmt.models", function(require) {
             res.returned_order_id = this.returned_order_id;
             res.returned_order_reference = this.returned_order_reference;
             res.original_payments = this.original_payments;
-            res.to_electronic_invoice = this.to_electronic_invoice;
             return res;
         },
     });

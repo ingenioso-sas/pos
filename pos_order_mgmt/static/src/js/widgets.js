@@ -333,13 +333,6 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             if (["return", "copy"].indexOf(action) !== -1) {
                 // If previous order was invoiced, we need a refund too
                 order.set_to_invoice(order_data.to_invoice);
-                if (order_data.to_electronic_invoice !== undefined) {
-                    if (order.set_to_electronic_invoice) {
-                        order.set_to_electronic_invoice(order_data.to_electronic_invoice);
-                    } else {
-                        order.to_electronic_invoice = order_data.to_electronic_invoice;
-                    }
-                }
             }
 
             // Get Salesperson
