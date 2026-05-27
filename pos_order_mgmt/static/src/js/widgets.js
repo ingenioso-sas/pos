@@ -13,7 +13,6 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
     var gui = require("point_of_sale.gui");
     var chrome = require("point_of_sale.chrome");
     var models = require("point_of_sale.models");
-    var popups = require("point_of_sale.popups");
 
     var QWeb = core.qweb;
     var ScreenWidget = screens.ScreenWidget;
@@ -633,7 +632,6 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
     screens.PaymentScreenWidget.include({
         renderElement: function () {
             this._super();
-            var self = this;
             var order = this.pos.get_order();
             if (order && order.returned_order_id) {
                 // Disable Invoice button
@@ -651,40 +649,6 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     "pointer-events": "none",
                     opacity: "0.5",
                 });
-            }
-
-            // Intercept modification clicks on Payment Screen (capture phase)
-            if (this.el) {
-                this.el.addEventListener('click', function (event) {
-                    var $target = $(event.target);
-                    var is_modification = $target.closest('.paymentmethods, .numpad, .payment-numpad, .js_customer, .js_invoice, .js_electronic_invoice').length > 0;
-                    if (is_modification) {
-                        var active_order = self.pos.get_order();
-                        if (active_order) {
-                            var pending_orders = self.pos.db.get_orders();
-                            var is_pending = _.find(pending_orders, function (o) {
-                                return o.id === active_order.uid;
-                            });
-                            if (is_pending && !active_order.allowed_to_modify) {
-                                event.stopPropagation();
-                                event.preventDefault();
-                                self.gui.show_popup('order_confirm_modify', {
-                                    title: _t("Security Warning: Modify Order"),
-                                    confirm: function (value) {
-                                        if (value === "modificar orden") {
-                                            active_order.allowed_to_modify = true;
-                                        } else {
-                                            self.gui.show_popup("error", {
-                                                title: _t("Modificación rechazada"),
-                                                body: _t("No se ha confirmado la modificación. Debe crear una nueva orden para continuar."),
-                                            });
-                                        }
-                                    },
-                                });
-                            }
-                        }
-                    }
-                }, true);
             }
         },
         click_paymentmethods: function (id) {
@@ -769,66 +733,8 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
     });
 
-    screens.ProductScreenWidget.include({
-        renderElement: function () {
-            this._super();
-            var self = this;
-            if (this.el) {
-                this.el.addEventListener('click', function (event) {
-                    var $target = $(event.target);
-                    var is_modification = $target.closest('.numpad, .product-list, .set-customer, .pay, .orderline').length > 0;
-                    if (is_modification) {
-                        var order = self.pos.get_order();
-                        if (order) {
-                            var pending_orders = self.pos.db.get_orders();
-                            var is_pending = _.find(pending_orders, function (o) {
-                                return o.id === order.uid;
-                            });
-                            if (is_pending && !order.allowed_to_modify) {
-                                event.stopPropagation();
-                                event.preventDefault();
-                                self.gui.show_popup('order_confirm_modify', {
-                                    title: _t("Security Warning: Modify Order"),
-                                    confirm: function (value) {
-                                        if (value === "modificar orden") {
-                                            order.allowed_to_modify = true;
-                                        } else {
-                                            self.gui.show_popup("error", {
-                                                title: _t("Modificación rechazada"),
-                                                body: _t("No se ha confirmado la modificación. Debe crear una nueva orden para continuar."),
-                                            });
-                                        }
-                                    },
-                                });
-                            }
-                        }
-                    }
-                }, true);
-            }
-        },
-    });
-
-    var OrderConfirmModifyPopupWidget = popups.extend({
-        template: 'OrderConfirmModifyPopupWidget',
-        show: function (options) {
-            options = options || {};
-            this._super(options);
-            this.renderElement();
-            this.$('input').focus();
-        },
-        click_confirm: function () {
-            var value = this.$('input').val();
-            this.gui.close_popup();
-            if (this.options.confirm) {
-                this.options.confirm.call(this, value);
-            }
-        },
-    });
-    gui.define_popup({ name: 'order_confirm_modify', widget: OrderConfirmModifyPopupWidget });
-
     return {
         ListOrderButtonWidget: ListOrderButtonWidget,
         OrderListScreenWidget: OrderListScreenWidget,
-        OrderConfirmModifyPopupWidget: OrderConfirmModifyPopupWidget,
     };
 });

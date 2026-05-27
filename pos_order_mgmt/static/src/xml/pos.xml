@@ -173,40 +173,4 @@
             </t>
         </t>
     </t>
-
-    <t t-name="OrderConfirmModifyPopupWidget">
-        <div role="dialog" class="modal-dialog">
-            <div class="popup popup-textinput order-confirm-modify-popup">
-                <header class="title confirm-modify-title">
-                    <t t-esc="widget.options.title || ''" />
-                </header>
-                <div class="confirm-modify-body">
-                    <div class="confirm-modify-warning-card">
-                        <span class="warning-icon">⚠</span>
-                        <div class="warning-text">
-                            <strong>This order is pending synchronization.</strong>
-                            <p>Modifying a local order that has not been synced with the server can cause inventory discrepancies or duplicate transactions.</p>
-                        </div>
-                    </div>
-                    <div class="confirm-modify-instructions">
-                        <strong>What do you want to do?</strong>
-                        <ul>
-                            <li>If you <strong>do NOT</strong> want to modify it, press <strong>Cancel</strong> and create a new order.</li>
-                            <li>If you are sure you want to proceed at your own risk, type the safety phrase exactly as shown below:</li>
-                        </ul>
-                        <div class="phrase-highlight">Type: <strong>modificar orden</strong></div>
-                    </div>
-                </div>
-                <input type='text' t-att-value="widget.options.value || ''" placeholder="Type the safety phrase here..."></input>
-                <div class="footer">
-                    <div class="button confirm">
-                        Confirm
-                    </div>
-                    <div class="button cancel">
-                        Cancel
-                    </div>
-                </div>
-            </div>
-        </div>
-    </t>
 </templates>

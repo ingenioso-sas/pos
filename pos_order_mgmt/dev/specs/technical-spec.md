@@ -51,20 +51,16 @@ El módulo sigue la arquitectura estándar de Odoo 13 (MVC). Extiende modelos ex
 
 ### 4.1. Extensiones de Modelos
 - `models.Order`: Sobrescribe `init_from_JSON`, `export_as_JSON` y `export_for_printing` para incluir datos de trazabilidad (`returned_order_id`).
-    - **Edición (Confirmación de Modificación de Pendientes):** Sobrescribe `initialize` para definir `allowed_to_modify = false`.
 
 ### 4.2. Componentes UI (Widgets)
 - `ListOrderButtonWidget`: Botón en el header para abrir la lista de pedidos.
 - `OrderListScreenWidget`: Pantalla principal de gestión. Maneja búsqueda reactiva (timeout 70ms), paginación y acciones.
     - Se extiende `_prepare_order_from_order_data` para guardar `original_payments` en el objeto `order` durante una devolución.
-- `ProductScreenWidget` y `PaymentScreenWidget`:
-    - **Adición (Intercepción en Captura y Popups):** Extienden `renderElement` para añadir un escuchador nativo de clics en la fase de captura (`useCapture = true`). Si el cajero hace clic en un elemento que pudiera modificar la orden (`.numpad, .product-list, .set-customer, .pay, .orderline, .paymentmethods, .payment-numpad, .js_customer, .js_invoice, .js_electronic_invoice`) y la orden está pendiente de sincronización, detiene la propagación del evento (`event.stopPropagation()`) y presenta el popup personalizado `OrderConfirmModifyPopupWidget` (`order_confirm_modify`) solicitando la frase `"modificar orden"`. Si confirma, establece `allowed_to_modify = true` para desbloquear la interfaz; si no, levanta un popup amigable del POS sin lanzar excepciones de JS.
 - `PaymentScreenWidget`: Extendido para implementar validaciones en devoluciones.
     - `click_paymentmethods(id)`: Bloquea métodos de pago no presentes en la orden original.
     - `order_is_valid()`: 
         - Valida que el monto reembolsado por cada método no exceda el original.
         - Valida que el balance pendiente (`get_due()`) sea exactamente cero para devoluciones.
-        - **Edición (Validación de Cantidad Cero):** Verifica que ninguna línea de la orden tenga una cantidad de `0`. Si existe, muestra una alerta al usuario identificando el producto específico y detiene la validación.
     - `renderElement()`: Deshabilita los botones de factura, factura electrónica y cambio de vendedor si es una devolución.
 - `ReceiptScreenWidget`: Extendido para manejar la impresión de pedidos "recargados" y añadir la etiqueta de duplicado.
 
@@ -74,8 +70,6 @@ El módulo sigue la arquitectura estándar de Odoo 13 (MVC). Extiende modelos ex
 - `OrderLine`: Fila de pedido con botones condicionales según permisos en `pos.config`.
 - `OrderDetails`: Detalles de productos cargados bajo demanda.
 - `PosTicket`/`XmlReceipt`: Extensiones para mostrar información de rectificación y etiqueta "DUPLICATE".
-- `OrderConfirmModifyPopupWidget`: Template para el popup personalizado de advertencia y confirmación de edición.
-
 
 ## 6. Seguridad y Permisos
 - El acceso está controlado por los flags en `pos.config`.
