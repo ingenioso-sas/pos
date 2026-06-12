@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 13.0-20230501\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-29 03:42+0000\n"
-"PO-Revision-Date: 2026-05-29 03:42+0000\n"
+"POT-Creation-Date: 2026-06-12 12:41+0000\n"
+"PO-Revision-Date: 2026-06-12 12:41+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -121,9 +121,19 @@ msgid "Date"
 msgstr "Fecha"
 
 #. module: pos_order_mgmt
+#: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__disable_return_payment_method_restriction
+msgid "Disable Return Payment Restriction"
+msgstr "Deshabilitar la restricción de pago de devolución"
+
+#. module: pos_order_mgmt
 #: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__iface_copy_done_order
 msgid "Duplicate Orders"
 msgstr "Pedidos duplicados"
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__return_bypass_payment_method_ids
+msgid "Exempt Return Payment Methods"
+msgstr "Métodos de pago de devolución exentos"
 
 #. module: pos_order_mgmt
 #. openerp-web
@@ -131,6 +141,11 @@ msgstr "Pedidos duplicados"
 #, python-format
 msgid "First"
 msgstr "Primero"
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__disable_return_payment_method_restriction
+msgid "If checked, any payment method can be used for returns."
+msgstr "Si está marcado, se puede utilizar cualquier método de pago para las devoluciones."
 
 #. module: pos_order_mgmt
 #. openerp-web
@@ -187,6 +202,13 @@ msgstr "Gestión de pedidos"
 #, python-format
 msgid "Payment Method Not Allowed"
 msgstr "Método de pago no permitido"
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__return_bypass_payment_method_ids
+msgid ""
+"Payment methods that can be used for returns even if they were not used in "
+"the original order."
+msgstr "Métodos de pago que se pueden utilizar para devoluciones incluso si no se utilizaron en el pedido original."
 
 #. module: pos_order_mgmt
 #: model:ir.model,name:pos_order_mgmt.model_pos_config
@@ -356,8 +378,10 @@ msgstr "Advertencia: Pedido pendiente de sincronización. Para editarlo escribe 
 #. openerp-web
 #: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
 #, python-format
-msgid "You can only use payment methods used in the original order."
-msgstr "Solo puede utilizar los métodos de pago utilizados en el pedido original."
+msgid ""
+"You can only use payment methods used in the original order, unless they are"
+" exempted in the POS config."
+msgstr "Solo puede utilizar los métodos de pago utilizados en el pedido original, a menos que estén exentos en la configuración del POS."
 
 #. module: pos_order_mgmt
 #. openerp-web

@@ -688,15 +688,16 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
         click_paymentmethods: function (id) {
             var order = this.pos.get_order();
-            if (order.returned_order_id && order.original_payments) {
+            if (order.returned_order_id && order.original_payments && !this.pos.config.disable_return_payment_method_restriction) {
                 var is_allowed = _.find(order.original_payments, function (p) {
                     return p.payment_method_id === id;
                 });
-                if (!is_allowed) {
+                var is_exempt = this.pos.config.return_bypass_payment_method_ids && this.pos.config.return_bypass_payment_method_ids.indexOf(id) !== -1;
+                if (!is_allowed && !is_exempt) {
                     this.gui.show_popup("error", {
                         title: _t("Payment Method Not Allowed"),
                         body: _t(
-                            "You can only use payment methods used in the original order."
+                            "You can only use payment methods used in the original order, unless they are exempted in the POS config."
                         ),
                     });
                     return;
@@ -720,7 +721,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     return false;
                 }
             }
-            if (order.returned_order_id && order.original_payments) {
+            if (order.returned_order_id && order.original_payments && !this.pos.config.disable_return_payment_method_restriction) {
                 var paymentlines = order.get_paymentlines();
                 var amounts_by_method = {};
                 for (var i = 0; i < paymentlines.length; i++) {
@@ -731,6 +732,10 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                 }
 
                 for (var mid in amounts_by_method) {
+                    var is_exempt = this.pos.config.return_bypass_payment_method_ids && this.pos.config.return_bypass_payment_method_ids.indexOf(parseInt(mid, 10)) !== -1;
+                    if (is_exempt) {
+                        continue;
+                    }
                     var original = _.find(order.original_payments, function (p) {
                         return p.payment_method_id === parseInt(mid, 10);
                     });

@@ -6,6 +6,11 @@ odoo.define("pos_order_mgmt.models", function(require) {
 
     var models = require("point_of_sale.models");
 
+    models.load_fields("pos.config", [
+        "disable_return_payment_method_restriction",
+        "return_bypass_payment_method_ids",
+    ]);
+
     var order_super = models.Order.prototype;
 
     models.Order = models.Order.extend({
