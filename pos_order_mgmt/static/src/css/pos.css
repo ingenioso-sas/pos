@@ -98,3 +98,22 @@
     padding: 20px;
     color: #888;
 }
+
+.pos .order-list-return {
+    position: relative;
+}
+
+.pos .order-list-return .refund-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    padding: 1px 5px;
+    font-size: 10px;
+    min-width: 16px;
+    text-align: center;
+    line-height: 14px;
+    font-weight: bold;
+}

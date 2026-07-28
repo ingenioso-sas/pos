@@ -103,9 +103,13 @@
                     class="button order-list-return"
                     t-att-data-order-id="order.id"
                     t-att-data-Uid='order.uid'
+                    t-att-data-refund-qty="order.refund_order_qty"
                     title="Create a refund order of this order"
                 >
                     <i class='fa fa-fw fa-undo' />
+                    <t t-if="order.refund_order_qty">
+                        <span class="badge refund-badge"><t t-esc="order.refund_order_qty"/></span>
+                    </t>
                 </span>
             </td>
         </tr>

@@ -234,11 +234,27 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         order_list_actions: function (event, action) {
             var self = this;
             var dataset = event.target.parentNode.dataset;
-            self.load_order_data(parseInt(dataset.orderId, 10)).then(function (
-                order_data
-            ) {
-                self.order_action(order_data, action);
-            });
+            if (action === "return" && parseInt(dataset.refundQty, 10) > 0) {
+                self.gui.show_popup("confirm", {
+                    title: _t("Order Already Refunded"),
+                    body: _t(
+                        "This order already has %s refund(s). Are you sure you want to create another refund?"
+                    ).replace("%s", dataset.refundQty),
+                    confirm: function () {
+                        self.load_order_data(parseInt(dataset.orderId, 10)).then(function (
+                            order_data
+                        ) {
+                            self.order_action(order_data, action);
+                        });
+                    },
+                });
+            } else {
+                self.load_order_data(parseInt(dataset.orderId, 10)).then(function (
+                    order_data
+                ) {
+                    self.order_action(order_data, action);
+                });
+            }
         },
 
         order_action: function (order_data, action) {
@@ -731,36 +747,47 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                         (amounts_by_method[mid] || 0) + line.get_amount();
                 }
 
-                for (var mid in amounts_by_method) {
-                    var is_exempt = this.pos.config.return_bypass_payment_method_ids && this.pos.config.return_bypass_payment_method_ids.indexOf(parseInt(mid, 10)) !== -1;
+                var original_by_method = {};
+                for (var i = 0; i < order.original_payments.length; i++) {
+                    var p = order.original_payments[i];
+                    original_by_method[p.payment_method_id] =
+                        (original_by_method[p.payment_method_id] || 0) + p.amount;
+                }
+
+                var method_ids = Object.keys(amounts_by_method);
+                for (var i = 0; i < method_ids.length; i++) {
+                    var mid = parseInt(method_ids[i], 10);
+                    if (isNaN(mid)) {
+                        continue;
+                    }
+                    var is_exempt = this.pos.config.return_bypass_payment_method_ids && this.pos.config.return_bypass_payment_method_ids.indexOf(mid) !== -1;
                     if (is_exempt) {
                         continue;
                     }
-                    var original = _.find(order.original_payments, function (p) {
-                        return p.payment_method_id === parseInt(mid, 10);
-                    });
+                    var original_amount = original_by_method[mid];
                     if (
-                        original &&
+                        original_amount !== undefined &&
                         Math.abs(amounts_by_method[mid]) >
-                            Math.abs(original.amount) + 0.0001
+                            Math.abs(original_amount) + 0.0001
                     ) {
                         var payment_method = this.pos.payment_methods_by_id[mid];
+                        var method_name = payment_method ? payment_method.name : mid;
                         this.gui.show_popup("error", {
                             title: _t("Amount Too High"),
                             body: _.str.sprintf(
                                 _t(
                                     "The refunded amount for %s (%s) cannot exceed the original amount (%s)."
                                 ),
-                                payment_method.name,
+                                method_name,
                                 this.format_currency(Math.abs(amounts_by_method[mid])),
-                                this.format_currency(original.amount)
+                                this.format_currency(original_amount)
                             ),
                         });
                         return false;
                     }
                 }
             }
-            if (order.returned_order_id && order.get_due() !== 0) {
+            if (order.returned_order_id && Math.abs(order.get_due()) > 0.0001) {
                 this.gui.show_popup("error", {
                     title: _t("Incomplete Refund"),
                     body: _t(

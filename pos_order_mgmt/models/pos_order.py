@@ -2,7 +2,8 @@
 # Copyright 2018 Tecnativa S.L. - David Vidal
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 
 
 class PosOrder(models.Model):
@@ -83,7 +84,8 @@ class PosOrder(models.Model):
             "pos_reference",
             "partner_id",
             "date_order",
-            "amount_total"
+            "amount_total",
+            "refund_order_qty",
         ]
 
     @api.model
@@ -120,6 +122,48 @@ class PosOrder(models.Model):
             "page_size": config.iface_load_done_order_max_qty
         }
 
+    @api.model
+    def create_from_ui(self, orders, *args, **kwargs):
+        for order in orders:
+            returned_order_id = order.get("returned_order_id") or \
+                order.get("data", {}).get("returned_order_id")
+            if returned_order_id:
+                self._check_refund_quantities(returned_order_id, order)
+        return super().create_from_ui(orders, *args, **kwargs)
+
+    @api.model
+    def _check_refund_quantities(self, returned_order_id, order):
+        original = self.browse(returned_order_id)
+        if not original.exists():
+            return
+        lines_data = order.get("data", {}).get("lines", [])
+        if not lines_data:
+            return
+        for line_vals in lines_data:
+            line_data = line_vals[2] if isinstance(
+                line_vals, (list, tuple)) and len(line_vals) == 3 else line_vals
+            product_id = line_data.get("product_id")
+            qty = abs(line_data.get("qty", 0))
+            if not product_id or not qty:
+                continue
+            already_refunded = sum(
+                abs(rl.qty)
+                for refund in original.refund_order_ids
+                if refund.state in ("paid", "done", "invoiced")
+                for rl in refund.lines
+                if rl.product_id.id == product_id
+            )
+            original_qty = sum(
+                l.qty for l in original.lines
+                if l.product_id.id == product_id
+            )
+            if already_refunded + qty > original_qty + 0.001:
+                product_name = line_data.get("product_name", product_id)
+                raise UserError(_(
+                    "The product '%s' from order %s has already been fully "
+                    "refunded. Cannot create duplicate refund."
+                ) % (product_name, original.pos_reference))
+
     def _prepare_done_order_for_pos(self):
         self.ensure_one()
         order_lines = []
@@ -144,6 +188,7 @@ class PosOrder(models.Model):
             "employee_id": getattr(self, "employee_id", self.env['hr.employee']).id,
             "returned_order_id": self.returned_order_id.id,
             "returned_order_reference": self.returned_order_reference,
+            "refund_order_qty": self.refund_order_qty,
         }
         return res
 
