@@ -10,3 +10,4 @@ No mezcles idiomas. Los términos técnicos (API, REST, CRUD) se mantienen en In
 - Flujo de trabajo: `/dev` → `/dev.spec` → `/dev.plan` → `/dev.build` → `/dev.finish`
 - Convenciones del proyecto: `dev/PROJECT.md`
 - Patrones descubiertos: `dev/PATTERNS.md`
+
