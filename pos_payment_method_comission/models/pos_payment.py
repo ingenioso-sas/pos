@@ -10,3 +10,4 @@ class PosPayment(models.Model):
     _inherit = "pos.payment"
 
     commission = fields.Float(string="Commission", digits='Account', readonly=True)
+    approval_reference = fields.Char(string="Referencia de Aprobación")

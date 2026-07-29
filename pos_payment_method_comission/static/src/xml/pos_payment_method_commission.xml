@@ -4,10 +4,17 @@
     <!-- Add commission amount to the payment line in payment screen -->
     <t t-extend="PaymentScreen-Paymentline">
         <t t-jquery=".paymentline-amount" t-operation="after">
-            <t t-if="paymentline.get_commission() > 0">
+            <t t-if="paymentline.get_commission() > 0 or paymentline.get_commission() &lt; 0">
                 <span class="paymentline-commission">
-                    + <t t-esc="widget.format_currency(paymentline.get_commission())"/> commission
+                    <t t-if="paymentline.get_commission() > 0">+</t> <t t-esc="widget.format_currency(paymentline.get_commission())"/> com.
                 </span>
+            </t>
+        </t>
+        <t t-jquery=".paymentline-name" t-operation="after">
+            <t t-if="paymentline.payment_method.require_approval_reference">
+                <div class="paymentline-approval-ref">
+                    <input type="text" class="paymentline-ref-input" t-att-value="paymentline.get_approval_reference()" placeholder="Ref. Aprobación" style="margin-top: 2px; font-size: 13px; padding: 3px; border-radius: 3px; border: 1px solid #ccc;"/>
+                </div>
             </t>
         </t>
     </t>

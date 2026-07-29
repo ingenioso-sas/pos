@@ -34,13 +34,38 @@ class PosPaymentMethod(models.Model):
         'account.journal',
         string="Commission Journal",
         domain=[('type', '=', 'general')],
-        help="The journal where the commission entries will be recorded."
+        help="El diario donde se registrarán los asientos contables de la comisión. "
+             "Aunque el método de pago tenga un diario por defecto para cobrar el dinero (activo), "
+             "este campo permite agrupar los gastos por comisiones en un diario específico (ej. Operaciones Varias) "
+             "para no mezclar el registro del dinero recibido con el gasto bancario."
     )
     commission_account_id = fields.Many2one(
         'account.account',
         string="Commission Expense Account",
-        domain=[('user_type_id.type', '=', 'other'), ('deprecated', '=', False)],
-        help="The account where the commission expense will be recorded."
+        domain=[('user_type_id.type', '=', 'expense'), ('deprecated', '=', False)],
+        help="La cuenta contable de GASTOS (ej. Gastos Bancarios) donde se debitará el valor de la comisión. "
+             "Se requiere una cuenta separada porque la comisión es un gasto operativo para la empresa, "
+             "y no debe debitarse de la cuenta de banco/caja que recibe el pago total."
+    )
+    commission_tax_ids = fields.Many2many(
+        'account.tax',
+        string="Impuestos de la Comisión",
+        domain=[('type_tax_use', '=', 'purchase')],
+        help="Impuestos (IVA, Retenciones) a aplicar sobre la comisión base."
+    )
+    require_approval_reference = fields.Boolean(
+        string="Pedir Referencia de Aprobación",
+        help="Exige ingresar un número de aprobación (ej. voucher, crédito Addi) en el TPV."
+    )
+    reverse_commission_on_refund = fields.Boolean(
+        string="Reversar Comisión en Devoluciones",
+        help="Si está activo, la comisión se restará en devoluciones."
+    )
+    refund_policy = fields.Selection(
+        [('real', 'Devolución Real Permitida'), ('wallet', 'Solo a Cartera / Saldo a Favor')],
+        string="Política de Devolución",
+        default='real',
+        help="Define si este método permite devolver dinero en efectivo/pasarela o si obliga a devolver el saldo a la cartera del cliente."
     )
 
     @api.constrains('commission_rate')
@@ -48,3 +73,11 @@ class PosPaymentMethod(models.Model):
         for record in self:
             if record.commission_rate < 0 or record.commission_rate > 100:
                 raise ValidationError(_("Commission rate must be between 0 and 100."))
+
+    @api.constrains('commission_fixed_amount')
+    def _check_commission_fixed_amount(self):
+        for record in self:
+            if record.commission_fixed_amount < 0:
+                raise ValidationError(
+                    _("Fixed commission amount must be a positive value.")
+                )

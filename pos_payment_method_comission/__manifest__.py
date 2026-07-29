@@ -4,7 +4,7 @@
 {
     "name": "Point of Sale - Payment Method Commission",
     "summary": "Allows to define commissions for PoS payment methods.",
-    "version": "13.0.1.0.0",
+    "version": "13.0.2.0.0",
     "category": "Point of Sale",
     "author": "Ing.Factura S.L",
     "website": "https://www.ingfactura.com",
