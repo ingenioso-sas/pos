@@ -42,7 +42,7 @@ class PosPaymentMethod(models.Model):
     commission_account_id = fields.Many2one(
         'account.account',
         string="Commission Expense Account",
-        domain=[('user_type_id.type', '=', 'expense'), ('deprecated', '=', False)],
+        domain=[('user_type_id.internal_group', '=', 'expense'), ('deprecated', '=', False)],
         help="La cuenta contable de GASTOS (ej. Gastos Bancarios) donde se debitará el valor de la comisión. "
              "Se requiere una cuenta separada porque la comisión es un gasto operativo para la empresa, "
              "y no debe debitarse de la cuenta de banco/caja que recibe el pago total."
