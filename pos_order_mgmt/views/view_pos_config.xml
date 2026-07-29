@@ -51,6 +51,20 @@
                                 />
                                 <field name="iface_load_done_order_max_qty" />
                             </div>
+                            <div class="row mt16" id="disable_return_payment_method_restriction" attrs="{'invisible': [('iface_return_done_order', '=', False)]}">
+                                <label
+                                    for="disable_return_payment_method_restriction"
+                                    class="col-lg-4 o_light_label"
+                                />
+                                <field name="disable_return_payment_method_restriction" />
+                            </div>
+                            <div class="row mt16" id="return_bypass_payment_method_ids" attrs="{'invisible': ['|', ('iface_return_done_order', '=', False), ('disable_return_payment_method_restriction', '=', True)]}">
+                                <label
+                                    for="return_bypass_payment_method_ids"
+                                    class="col-lg-4 o_light_label"
+                                />
+                                <field name="return_bypass_payment_method_ids" widget="many2many_tags" />
+                            </div>
                         </div>
                     </div>
                 </div>

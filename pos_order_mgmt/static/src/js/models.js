@@ -6,24 +6,46 @@ odoo.define("pos_order_mgmt.models", function(require) {
 
     var models = require("point_of_sale.models");
 
+    models.load_fields("pos.config", [
+        "disable_return_payment_method_restriction",
+        "return_bypass_payment_method_ids",
+    ]);
+
     var order_super = models.Order.prototype;
 
     models.Order = models.Order.extend({
+        initialize: function(attr, options) {
+            order_super.initialize.apply(this, arguments);
+            this.allowed_to_modify = false;
+        },
         init_from_JSON: function(json) {
             order_super.init_from_JSON.apply(this, arguments);
             this.returned_order_id = json.returned_order_id;
             this.returned_order_reference = json.returned_order_reference;
+            this.original_payments = json.original_payments;
+            this.user_id = json.user_id;
+            this.employee_id = json.employee_id;
         },
         export_as_JSON: function() {
             var res = order_super.export_as_JSON.apply(this, arguments);
             res.returned_order_id = this.returned_order_id;
             res.returned_order_reference = this.returned_order_reference;
+            res.original_payments = this.original_payments;
+            if (this.returned_order_id) {
+                if (this.user_id) {
+                    res.user_id = this.user_id;
+                }
+                if (this.employee_id) {
+                    res.employee_id = this.employee_id;
+                }
+            }
             return res;
         },
         export_for_printing: function() {
             var res = order_super.export_for_printing.apply(this, arguments);
             res.returned_order_id = this.returned_order_id;
             res.returned_order_reference = this.returned_order_reference;
+            res.original_payments = this.original_payments;
             return res;
         },
     });

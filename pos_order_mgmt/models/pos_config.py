@@ -43,3 +43,17 @@ class PosConfig(models.Model):
         "Set it to 0 to load none (it's still possible to load them by "
         "ticket code).",
     )
+
+    disable_return_payment_method_restriction = fields.Boolean(
+        string="Disable Return Payment Restriction",
+        help="If checked, any payment method can be used for returns.",
+    )
+
+    return_bypass_payment_method_ids = fields.Many2many(
+        comodel_name="pos.payment.method",
+        relation="pos_config_return_bypass_payment_method_rel",
+        column1="config_id",
+        column2="payment_method_id",
+        string="Exempt Return Payment Methods",
+        help="Payment methods that can be used for returns even if they were not used in the original order.",
+    )

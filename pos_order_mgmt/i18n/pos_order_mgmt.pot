@@ -4,8 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 13.0\n"
+"Project-Id-Version: Odoo Server 13.0-20230501\n"
 "Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-12 12:41+0000\n"
+"PO-Revision-Date: 2026-06-12 12:41+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -47,9 +49,23 @@ msgstr ""
 
 #. module: pos_order_mgmt
 #. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Amount Too High"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
 #: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
 #, python-format
 msgid "Back"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#, python-format
+msgid "Buscar por referencia, producto o cliente..."
 msgstr ""
 
 #. module: pos_order_mgmt
@@ -105,8 +121,37 @@ msgid "Date"
 msgstr ""
 
 #. module: pos_order_mgmt
+#: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__disable_return_payment_method_restriction
+msgid "Disable Return Payment Restriction"
+msgstr ""
+
+#. module: pos_order_mgmt
 #: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__iface_copy_done_order
 msgid "Duplicate Orders"
+msgstr ""
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__return_bypass_payment_method_ids
+msgid "Exempt Return Payment Methods"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#, python-format
+msgid "First"
+msgstr ""
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__disable_return_payment_method_restriction
+msgid "If checked, any payment method can be used for returns."
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Incomplete Refund"
 msgstr ""
 
 #. module: pos_order_mgmt
@@ -122,8 +167,47 @@ msgid ""
 msgstr ""
 
 #. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Modificación rechazada"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#, python-format
+msgid "Next"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid ""
+"No se ha confirmado la modificación. Debe crear una nueva orden para "
+"continuar."
+msgstr ""
+
+#. module: pos_order_mgmt
 #: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__iface_order_mgmt
 msgid "Order Management"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Payment Method Not Allowed"
+msgstr ""
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__return_bypass_payment_method_ids
+msgid ""
+"Payment methods that can be used for returns even if they were not used in "
+"the original order."
 msgstr ""
 
 #. module: pos_order_mgmt
@@ -140,7 +224,44 @@ msgstr ""
 #. openerp-web
 #: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
 #, python-format
+msgid "Previous"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#, python-format
+msgid "Price"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#, python-format
 msgid "Print a duplicate for this order"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#, python-format
+msgid "Product"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid ""
+"Product %s has zero quantity. You cannot have order lines with a quantity of"
+" zero (0)."
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#, python-format
+msgid "Qty"
 msgstr ""
 
 #. module: pos_order_mgmt
@@ -208,9 +329,19 @@ msgstr ""
 
 #. module: pos_order_mgmt
 #. openerp-web
-#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
 #, python-format
-msgid "Search Order"
+msgid ""
+"The refunded amount for %s (%s) cannot exceed the original amount (%s)."
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid ""
+"The total amount of the refund must be exactly the same as the total of the "
+"products returned."
 msgstr ""
 
 #. module: pos_order_mgmt
@@ -230,4 +361,31 @@ msgstr ""
 #: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
 #, python-format
 msgid "Unknown Products"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid ""
+"Warning: Order pending synchronization. To edit it, type exactly 'modificar "
+"orden' and confirm. If you prefer not to modify it, cancel and create a new "
+"order:"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid ""
+"You can only use payment methods used in the original order, unless they are"
+" exempted in the POS config."
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Zero Quantity Line"
 msgstr ""

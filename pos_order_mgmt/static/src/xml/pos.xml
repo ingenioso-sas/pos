@@ -62,7 +62,7 @@
         </div>
     </t>
     <t t-name="OrderLine">
-        <tr class='order-line' t-att-data-id='order.id' t-att-data-Uid='order.uid'>
+        <tr class='order-line' t-att-data-id='order.id' t-att-data-Uid='order.uid' t-att-data-order-id="order.id">
             <td name="td_ol_name">
                 <t t-esc='order.pos_reference or order.name' />
             </td>
@@ -103,12 +103,44 @@
                     class="button order-list-return"
                     t-att-data-order-id="order.id"
                     t-att-data-Uid='order.uid'
+                    t-att-data-refund-qty="order.refund_order_qty"
                     title="Create a refund order of this order"
                 >
                     <i class='fa fa-fw fa-undo' />
+                    <t t-if="order.refund_order_qty">
+                        <span class="badge refund-badge"><t t-esc="order.refund_order_qty"/></span>
+                    </t>
                 </span>
             </td>
         </tr>
+        <tr class='order-line-details o_hidden' t-att-data-id='order.id'>
+            <td colspan="5">
+                <div class="order-details-container">
+                    <!-- Products will be loaded here -->
+                </div>
+            </td>
+        </tr>
+    </t>
+
+    <t t-name="OrderDetails">
+        <table class="order-details-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                <t t-foreach="order.line_ids" t-as="line">
+                    <tr>
+                        <td><t t-esc="line.product_name"/></td>
+                        <td><t t-esc="line.qty"/></td>
+                        <td><t t-esc="widget.format_currency(line.price_unit)"/></td>
+                    </tr>
+                </t>
+            </tbody>
+        </table>
     </t>
     <t t-extend="OrderWidget">
         <t t-jquery=".summary" t-operation="after">

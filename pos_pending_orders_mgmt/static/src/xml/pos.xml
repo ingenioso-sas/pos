@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="PendingOrderListScreenWidget">
+        <div class="pending-orders-screen clientlist-screen screen">
+            <div class="screen-content">
+                <section class="top-content">
+                    <span class='button back'>
+                        <i class='fa fa-angle-double-left'></i>
+                        Back
+                    </span>
+                    <span class='searchbox'>
+                        <input placeholder='Search Pending Orders' />
+                        <span class='search-clear'></span>
+                    </span>
+                </section>
+                <section class="full-content">
+                    <div class="window">
+                        <section class="subwindow">
+                            <div class="subwindow-container">
+                                <div class="subwindow-container-fix touch-scrollable scrollable-y">
+                                    <table class="client-list">
+                                        <thead>
+                                            <tr>
+                                                <th class="col-ref">Ref.</th>
+                                                <th class="col-date">Date</th>
+                                                <th class="col-customer">Customer</th>
+                                                <th class="col-amount">Amount</th>
+                                                <th class="col-actions">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="pending-order-list-contents">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="PendingOrderLine">
+        <tr class='order-line' t-att-data-id='order.id'>
+            <td class="col-ref"><t t-esc='order.data.name' /></td>
+            <td class="col-date"><t t-esc='order.data.creation_date' /></td>
+            <td class="col-customer"><t t-esc='partner_name' /></td>
+            <td class="col-amount"><t t-esc='widget.format_currency(order.data.amount_total)' /></td>
+            <td class="col-actions">
+                <span class='button retry-order' title='Retry Send'>
+                    <i class='fa fa-refresh'></i>
+                </span>
+                <span class='button load-order' title='Load to Sale View'>
+                    <i class='fa fa-shopping-cart'></i>
+                </span>
+                <span class='button remove-order' title='Delete Order'>
+                    <i class='fa fa-trash'></i>
+                </span>
+            </td>
+        </tr>
+    </t>
+</templates>
