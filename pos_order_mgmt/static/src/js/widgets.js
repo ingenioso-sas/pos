@@ -151,6 +151,9 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                 if (!$container.children().length) {
                     $container.html('<div class="loader"><i class="fa fa-spinner fa-spin" /> Loading...</div>');
                     this.load_order_data(order_id).then(function (order_data) {
+                        if (!order_data) {
+                            return;
+                        }
                         var details_html = QWeb.render('OrderDetails', {
                             widget: self,
                             order: order_data,
@@ -258,6 +261,9 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
 
         order_action: function (order_data, action) {
+            if (!order_data) {
+                return;
+            }
             if (this.old_order !== null) {
                 this.gui.back();
             }
@@ -551,7 +557,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                         }
                     });
                 })
-                .catch(function (error, event) {
+                .catch(function (error) {
                     if (parseInt(error.code, 10) === 200) {
                         // Business Logic Error, not a connection problem
                         self.gui.show_popup("error-traceback", {
@@ -567,7 +573,6 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                             ),
                         });
                     }
-                    event?.preventDefault();
                 });
         },
 

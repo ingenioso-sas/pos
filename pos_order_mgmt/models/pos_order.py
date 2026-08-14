@@ -103,23 +103,30 @@ class PosOrder(models.Model):
             condition += self._prepare_filter_query_for_pos(pos_session_id, query)
         field_names = self._prepare_fields_for_pos_list()
 
-        total_items = self.search_count(
-            condition
-        )
-        result_query = self.search_read(
-            condition,
-            field_names,
-            limit=config.iface_load_done_order_max_qty,
-            offset= page*config.iface_load_done_order_max_qty
-        )
+        page_size = config.iface_load_done_order_max_qty
+        total_items = self.search_count(condition)
+        result_query = []
+        if page_size:
+            result_query = self.search_read(
+                condition,
+                field_names,
+                limit=page_size,
+                offset=page * page_size,
+            )
         return {
             "items": result_query,
             "current_page": page,
-            "nex_page": page + 1 if (page + 1) * config.iface_load_done_order_max_qty < total_items else None,
+            "nex_page": (
+                page + 1
+                if page_size and (page + 1) * page_size < total_items
+                else None
+            ),
             "prev_page": page - 1 if page > 0 else None,
             "total_items": total_items,
-            "total_pages": (total_items + config.iface_load_done_order_max_qty - 1) // config.iface_load_done_order_max_qty,
-            "page_size": config.iface_load_done_order_max_qty
+            "total_pages": (
+                (total_items + page_size - 1) // page_size if page_size else 0
+            ),
+            "page_size": page_size,
         }
 
     @api.model

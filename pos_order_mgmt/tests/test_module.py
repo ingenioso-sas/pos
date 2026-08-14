@@ -58,12 +58,14 @@ class TestModule(TransactionCase):
         orders_data = self.PosOrder.search_done_orders_for_pos(
             [], self.pos_config.current_session_id.id
         )
-        self.assertEqual(len(orders_data), 1)
-        self.assertEqual(orders_data[0]["id"], order.id)
+        self.assertEqual(orders_data["total_items"], 1)
+        self.assertEqual(len(orders_data["items"]), 1)
+        self.assertEqual(orders_data["items"][0]["id"], order.id)
         orders_data2 = self.PosOrder.search_done_orders_for_pos(
             "0006", self.pos_config.current_session_id.id
         )
-        self.assertEqual(len(orders_data2), 1)
+        self.assertEqual(orders_data2["total_items"], 1)
+        self.assertEqual(len(orders_data2["items"]), 1)
 
         detail_data = order.load_done_order_for_pos()
         self.assertEqual(
@@ -88,9 +90,9 @@ class TestModule(TransactionCase):
         prepare_query = self.PosOrder._prepare_filter_query_for_pos(
             self.pos_config.current_session_id.id, query
         )
-        self.assertEqual(prepare_query[2][2], query)
         self.assertEqual(prepare_query[3][2], query)
         self.assertEqual(prepare_query[4][2], query)
+        self.assertEqual(prepare_query[5][2], query)
 
     def test_full_return(self):
         """Verify full return creates refund linked to original."""
