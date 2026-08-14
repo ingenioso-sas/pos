@@ -65,6 +65,13 @@
                                 />
                                 <field name="return_bypass_payment_method_ids" widget="many2many_tags" />
                             </div>
+                            <div class="row mt16" id="pending_order_modification_confirmation">
+                                <label
+                                    for="pending_order_modification_confirmation"
+                                    class="col-lg-4 o_light_label"
+                                />
+                                <field name="pending_order_modification_confirmation" />
+                            </div>
                         </div>
                     </div>
                 </div>

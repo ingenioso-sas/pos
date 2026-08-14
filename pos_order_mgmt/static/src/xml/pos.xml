@@ -19,7 +19,6 @@
                         <input id="custom-search" placeholder='Buscar por referencia, producto o cliente...' />
                         <span class='search-clear' />
                     </span>
-                    <span class='searchbox' />
                 </section>
                 <section class="full-content">
                     <div class="window">

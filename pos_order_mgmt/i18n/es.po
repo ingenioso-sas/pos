@@ -204,6 +204,11 @@ msgid "Payment Method Not Allowed"
 msgstr "Método de pago no permitido"
 
 #. module: pos_order_mgmt
+#: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__pending_order_modification_confirmation
+msgid "Pending Order Modification Confirmation"
+msgstr "Confirmación de Modificación de Orden Pendiente"
+
+#. module: pos_order_mgmt
 #: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__return_bypass_payment_method_ids
 msgid ""
 "Payment methods that can be used for returns even if they were not used in "
@@ -366,13 +371,18 @@ msgstr "Productos desconocidos"
 #. module: pos_order_mgmt
 #. openerp-web
 #: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
-#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
 #, python-format
 msgid ""
-"Warning: Order pending synchronization. To edit it, type exactly 'modificar "
-"orden' and confirm. If you prefer not to modify it, cancel and create a new "
-"order:"
-msgstr "Advertencia: Pedido pendiente de sincronización. Para editarlo escribe exactamente 'modificar orden' y confirma. Si prefieres no modificarlo, cancelar y crear un nuevo pedido:"
+"Warning: Order pending synchronization. To edit it, type exactly '%s' and "
+"confirm. If you prefer not to modify it, cancel and create a new order:"
+msgstr "Advertencia: Pedido pendiente de sincronización. Para editarlo escribe exactamente '%s' y confirma. Si prefieres no modificarlo, cancelar y crear un nuevo pedido:"
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__pending_order_modification_confirmation
+msgid ""
+"Word the cashier must type in the PoS to confirm that an unsynchronized "
+"order can be modified."
+msgstr "Palabra que el cajero debe escribir en el TPV para confirmar que una orden no sincronizada puede ser modificada."
 
 #. module: pos_order_mgmt
 #. openerp-web

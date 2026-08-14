@@ -204,6 +204,11 @@ msgid "Payment Method Not Allowed"
 msgstr ""
 
 #. module: pos_order_mgmt
+#: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__pending_order_modification_confirmation
+msgid "Pending Order Modification Confirmation"
+msgstr ""
+
+#. module: pos_order_mgmt
 #: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__return_bypass_payment_method_ids
 msgid ""
 "Payment methods that can be used for returns even if they were not used in "
@@ -366,12 +371,17 @@ msgstr ""
 #. module: pos_order_mgmt
 #. openerp-web
 #: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
-#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
 #, python-format
 msgid ""
-"Warning: Order pending synchronization. To edit it, type exactly 'modificar "
-"orden' and confirm. If you prefer not to modify it, cancel and create a new "
-"order:"
+"Warning: Order pending synchronization. To edit it, type exactly '%s' and "
+"confirm. If you prefer not to modify it, cancel and create a new order:"
+msgstr ""
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__pending_order_modification_confirmation
+msgid ""
+"Word the cashier must type in the PoS to confirm that an unsynchronized "
+"order can be modified."
 msgstr ""
 
 #. module: pos_order_mgmt

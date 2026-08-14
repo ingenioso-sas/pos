@@ -116,7 +116,7 @@ class PosOrder(models.Model):
         return {
             "items": result_query,
             "current_page": page,
-            "nex_page": (
+            "next_page": (
                 page + 1
                 if page_size and (page + 1) * page_size < total_items
                 else None
@@ -146,6 +146,24 @@ class PosOrder(models.Model):
         lines_data = order.get("data", {}).get("lines", [])
         if not lines_data:
             return
+        original_qty_by_product = {}
+        for line in original.lines:
+            original_qty_by_product[line.product_id.id] = (
+                original_qty_by_product.get(line.product_id.id, 0) + line.qty
+            )
+        refunded_qty_by_product = {}
+        refunds = original.refund_order_ids.filtered(
+            lambda refund: refund.state in ("paid", "done", "invoiced")
+        )
+        if refunds:
+            refunded_lines = self.env["pos.order.line"].search(
+                [("order_id", "in", refunds.ids)]
+            )
+            for refunded_line in refunded_lines:
+                refunded_qty_by_product[refunded_line.product_id.id] = (
+                    refunded_qty_by_product.get(refunded_line.product_id.id, 0)
+                    + abs(refunded_line.qty)
+                )
         for line_vals in lines_data:
             line_data = line_vals[2] if isinstance(
                 line_vals, (list, tuple)) and len(line_vals) == 3 else line_vals
@@ -153,17 +171,8 @@ class PosOrder(models.Model):
             qty = abs(line_data.get("qty", 0))
             if not product_id or not qty:
                 continue
-            already_refunded = sum(
-                abs(rl.qty)
-                for refund in original.refund_order_ids
-                if refund.state in ("paid", "done", "invoiced")
-                for rl in refund.lines
-                if rl.product_id.id == product_id
-            )
-            original_qty = sum(
-                l.qty for l in original.lines
-                if l.product_id.id == product_id
-            )
+            already_refunded = refunded_qty_by_product.get(product_id, 0)
+            original_qty = original_qty_by_product.get(product_id, 0)
             if already_refunded + qty > original_qty + 0.001:
                 product_name = line_data.get("product_name", product_id)
                 raise UserError(_(

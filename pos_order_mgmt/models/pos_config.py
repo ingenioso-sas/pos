@@ -57,3 +57,10 @@ class PosConfig(models.Model):
         string="Exempt Return Payment Methods",
         help="Payment methods that can be used for returns even if they were not used in the original order.",
     )
+
+    pending_order_modification_confirmation = fields.Char(
+        string="Pending Order Modification Confirmation",
+        default="modificar orden",
+        help="Word the cashier must type in the PoS to confirm that an "
+        "unsynchronized order can be modified.",
+    )
