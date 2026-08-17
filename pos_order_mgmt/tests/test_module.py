@@ -305,6 +305,233 @@ class TestModule(TransactionCase):
         self.assertEqual(refund_order.lines[0].product_id.id, self.pos_product_b.id)
         self.assertEqual(refund_order.lines[0].qty, -1)
 
+    def test_return_and_sale_combined_with_fully_refunded_product(self):
+        """Verify a combined order (return one product + sell another that was
+        already fully refunded) does not raise a misleading duplicate-refund
+        error about a sale line."""
+        account_receivable_id = (
+            self.env.user.partner_id.property_account_receivable_id.id
+        )
+        current_session = self.pos_config.current_session_id
+        payment_methods = current_session.payment_method_ids
+        cash_method = payment_methods.filtered(
+            lambda pm: pm.is_cash_count and not pm.split_transactions
+        )[0]
+
+        # Original order: product A (qty 1, 30.0) + product B (qty 1, 25.0)
+        order_data = {
+            "id": "0006-001-0060",
+            "to_invoice": False,
+            "data": {
+                "pricelist_id": self.pricelist.id,
+                "user_id": 1,
+                "name": "Order 0006-001-0060",
+                "partner_id": self.partner.id,
+                "amount_paid": 55.0,
+                "pos_session_id": self.pos_config.current_session_id.id,
+                "lines": [
+                    [
+                        0,
+                        0,
+                        {
+                            "product_id": self.pos_product.id,
+                            "price_unit": 30.0,
+                            "qty": 1,
+                            "price_subtotal": 30.0,
+                            "price_subtotal_incl": 30.0,
+                        },
+                    ],
+                    [
+                        0,
+                        0,
+                        {
+                            "product_id": self.pos_product_b.id,
+                            "price_unit": 25.0,
+                            "qty": 1,
+                            "price_subtotal": 25.0,
+                            "price_subtotal_incl": 25.0,
+                        },
+                    ],
+                ],
+                "statement_ids": [
+                    [
+                        0,
+                        0,
+                        {
+                            "journal_id": self.pos_config.journal_id.id,
+                            "amount": 55.0,
+                            "name": fields.Datetime.now(),
+                            "account_id": account_receivable_id,
+                            "statement_id": current_session.statement_ids[0].id,
+                            "payment_method_id": cash_method.id,
+                        },
+                    ]
+                ],
+                "creation_date": u"2018-09-27 15:51:03",
+                "amount_tax": 0,
+                "fiscal_position_id": False,
+                "uid": u"00001-001-0060",
+                "amount_return": 0,
+                "sequence_number": 1,
+                "amount_total": 55.0,
+            },
+        }
+        result = self.PosOrder.create_from_ui([order_data])
+        order = self.PosOrder.browse(result[0]["id"])
+
+        # Full refund of product B
+        refund_b = {
+            "id": "0006-001-0061",
+            "to_invoice": False,
+            "data": {
+                "pricelist_id": self.pricelist.id,
+                "user_id": 1,
+                "name": "Refund 0006-001-0061",
+                "partner_id": self.partner.id,
+                "amount_paid": 0,
+                "pos_session_id": self.pos_config.current_session_id.id,
+                "returned_order_id": order.id,
+                "lines": [
+                    [
+                        0,
+                        0,
+                        {
+                            "product_id": self.pos_product_b.id,
+                            "price_unit": 25.0,
+                            "qty": -1,
+                            "price_subtotal": -25.0,
+                            "price_subtotal_incl": -25.0,
+                        },
+                    ]
+                ],
+                "statement_ids": [],
+                "creation_date": u"2018-09-27 16:00:00",
+                "amount_tax": 0,
+                "fiscal_position_id": False,
+                "uid": u"00001-001-0061",
+                "amount_return": 0,
+                "sequence_number": 2,
+                "amount_total": -25.0,
+            },
+        }
+        self.PosOrder.create_from_ui([refund_b])
+
+        # Combined order: return product A (negative) + sell product B (positive)
+        combined = {
+            "id": "0006-001-0062",
+            "to_invoice": False,
+            "data": {
+                "pricelist_id": self.pricelist.id,
+                "user_id": 1,
+                "name": "Order 0006-001-0062",
+                "partner_id": self.partner.id,
+                "amount_paid": 15.0,
+                "pos_session_id": self.pos_config.current_session_id.id,
+                "returned_order_id": order.id,
+                "lines": [
+                    [
+                        0,
+                        0,
+                        {
+                            "product_id": self.pos_product.id,
+                            "price_unit": 30.0,
+                            "qty": -1,
+                            "price_subtotal": -30.0,
+                            "price_subtotal_incl": -30.0,
+                        },
+                    ],
+                    [
+                        0,
+                        0,
+                        {
+                            "product_id": self.pos_product_b.id,
+                            "price_unit": 45.0,
+                            "qty": 1,
+                            "price_subtotal": 45.0,
+                            "price_subtotal_incl": 45.0,
+                        },
+                    ],
+                ],
+                "statement_ids": [
+                    [
+                        0,
+                        0,
+                        {
+                            "journal_id": self.pos_config.journal_id.id,
+                            "amount": 15.0,
+                            "name": fields.Datetime.now(),
+                            "account_id": account_receivable_id,
+                            "statement_id": current_session.statement_ids[0].id,
+                            "payment_method_id": cash_method.id,
+                        },
+                    ]
+                ],
+                "creation_date": u"2018-09-27 17:00:00",
+                "amount_tax": 0,
+                "fiscal_position_id": False,
+                "uid": u"00001-001-0062",
+                "amount_return": 0,
+                "sequence_number": 3,
+                "amount_total": 15.0,
+            },
+        }
+        result3 = self.PosOrder.create_from_ui([combined])
+        combined_order = self.PosOrder.browse(result3[0]["id"])
+        self.assertEqual(combined_order.returned_order_id.id, order.id)
+
+    def test_mixed_sign_order_rejected(self):
+        """Verify a combined order (sale + return in the same order) is
+        rejected with UserError."""
+        order = self._create_order(amount=50.0)
+
+        mixed = {
+            "id": "0006-001-0070",
+            "to_invoice": False,
+            "data": {
+                "pricelist_id": self.pricelist.id,
+                "user_id": 1,
+                "name": "Order 0006-001-0070",
+                "partner_id": self.partner.id,
+                "amount_paid": 0,
+                "pos_session_id": self.pos_config.current_session_id.id,
+                "returned_order_id": order.id,
+                "lines": [
+                    [
+                        0,
+                        0,
+                        {
+                            "product_id": self.pos_product.id,
+                            "price_unit": 50.0,
+                            "qty": -1,
+                            "price_subtotal": -50.0,
+                            "price_subtotal_incl": -50.0,
+                        },
+                    ],
+                    [
+                        0,
+                        0,
+                        {
+                            "product_id": self.pos_product_b.id,
+                            "price_unit": 60.0,
+                            "qty": 1,
+                            "price_subtotal": 60.0,
+                            "price_subtotal_incl": 60.0,
+                        },
+                    ],
+                ],
+                "statement_ids": [],
+                "creation_date": u"2018-09-27 17:00:00",
+                "amount_tax": 0,
+                "fiscal_position_id": False,
+                "uid": u"00001-001-0070",
+                "amount_return": 0,
+                "sequence_number": 4,
+                "amount_total": 10.0,
+            },
+        }
+        with self.assertRaises(UserError):
+            self.PosOrder.create_from_ui([mixed])
+
     def test_duplicate_return_prevention(self):
         """Verify duplicate full return raises UserError."""
         order = self._create_order(amount=30.0)

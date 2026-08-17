@@ -132,11 +132,49 @@ class PosOrder(models.Model):
     @api.model
     def create_from_ui(self, orders, *args, **kwargs):
         for order in orders:
+            self._check_no_mixed_sign_lines(order)
             returned_order_id = order.get("returned_order_id") or \
                 order.get("data", {}).get("returned_order_id")
             if returned_order_id:
                 self._check_refund_quantities(returned_order_id, order)
         return super().create_from_ui(orders, *args, **kwargs)
+
+    @api.model
+    def _check_no_mixed_sign_lines(self, order):
+        """A POS order must be either a sale or a return, never both.
+
+        Reject orders that mix positive (sale) and negative (return) line
+        quantities, and reject return orders that only contain positive lines
+        (a return order must only refund products).
+        """
+        lines_data = order.get("data", {}).get("lines", [])
+        if not lines_data:
+            return
+        is_return = bool(
+            order.get("returned_order_id")
+            or order.get("data", {}).get("returned_order_id")
+        )
+        has_positive = False
+        has_negative = False
+        for line_vals in lines_data:
+            line_data = line_vals[2] if isinstance(
+                line_vals, (list, tuple)) and len(line_vals) == 3 else line_vals
+            qty = line_data.get("qty", 0)
+            if qty > 0:
+                has_positive = True
+            elif qty < 0:
+                has_negative = True
+        if has_positive and has_negative:
+            raise UserError(_(
+                "A POS order cannot combine sales and returns. "
+                "Please process the return and the sale in separate orders."
+            ))
+        if is_return and has_positive and not has_negative:
+            raise UserError(_(
+                "A return order can only contain returned products "
+                "(negative quantities). To sell products, create a new "
+                "order instead."
+            ))
 
     @api.model
     def _check_refund_quantities(self, returned_order_id, order):
@@ -168,16 +206,21 @@ class PosOrder(models.Model):
             line_data = line_vals[2] if isinstance(
                 line_vals, (list, tuple)) and len(line_vals) == 3 else line_vals
             product_id = line_data.get("product_id")
-            qty = abs(line_data.get("qty", 0))
-            if not product_id or not qty:
+            qty = line_data.get("qty", 0)
+            # Only the refunded (negative) lines are subject to the duplicate
+            # refund check. Positive lines are new sales on the same order and
+            # must not be validated against the original order.
+            if not product_id or qty >= 0:
                 continue
+            qty = abs(qty)
             already_refunded = refunded_qty_by_product.get(product_id, 0)
             original_qty = original_qty_by_product.get(product_id, 0)
             if already_refunded + qty > original_qty + 0.001:
                 product_name = line_data.get("product_name", product_id)
                 raise UserError(_(
-                    "The product '%s' from order %s has already been fully "
-                    "refunded. Cannot create duplicate refund."
+                    "The product '%s' from order %s cannot be returned: the "
+                    "total returned quantity exceeds the quantity originally "
+                    "purchased in that order."
                 ) % (product_name, original.pos_reference))
 
     def _prepare_done_order_for_pos(self):

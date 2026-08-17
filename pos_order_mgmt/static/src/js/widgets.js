@@ -8,6 +8,8 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
 
     var core = require("web.core");
     var _t = core._t;
+    var session = require("web.session");
+    var rpc = require("web.rpc");
     var PosBaseWidget = require("point_of_sale.BaseWidget");
     var screens = require("point_of_sale.screens");
     var gui = require("point_of_sale.gui");
@@ -762,8 +764,43 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         order_is_valid: function (force_validation) {
             var order = this.pos.get_order();
             var orderlines = order.get_orderlines();
+
+            // An order must be either a sale or a return, never both, and a
+            // return order must only contain returned (negative) lines.
+            var has_positive = false;
+            var has_negative = false;
             for (var i = 0; i < orderlines.length; i++) {
-                var line = orderlines[i];
+                var q = orderlines[i].get_quantity();
+                if (q > 0) {
+                    has_positive = true;
+                } else if (q < 0) {
+                    has_negative = true;
+                }
+            }
+            if (has_positive && has_negative) {
+                this.gui.show_popup("error", {
+                    title: _t("Mixed order not allowed"),
+                    body: _t(
+                        "A POS order cannot combine sales and returns. " +
+                        "Please process the return and the sale in separate orders."
+                    ),
+                });
+                return false;
+            }
+            if (order.returned_order_id && has_positive && !has_negative) {
+                this.gui.show_popup("error", {
+                    title: _t("No sales on return orders"),
+                    body: _t(
+                        "A return order can only contain returned products " +
+                        "(negative quantities). To sell products, create a " +
+                        "new order instead."
+                    ),
+                });
+                return false;
+            }
+
+            for (var j = 0; j < orderlines.length; j++) {
+                var line = orderlines[j];
                 if (line.get_quantity() === 0) {
                     this.gui.show_popup("error", {
                         title: _t("Zero Quantity Line"),
@@ -837,6 +874,44 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             return this._super(force_validation);
         },
     }));
+
+    screens.PaymentScreenWidget.include({
+        post_push_order_resolve: function (order, server_ids) {
+            var self = this;
+            // l10n_co_pos (when installed) overrides this method to store the
+            // backend order name on the ticket and crashes with a TypeError
+            // when search_read returns no rows (result[0] is undefined), e.g.
+            // on a combined return + sale order. Replicate its behaviour here
+            // guarded, keeping the base email behaviour intact.
+            var is_colombian =
+                typeof this.pos.is_colombian_country === "function" &&
+                this.pos.is_colombian_country();
+            if (is_colombian && typeof order.set_l10n_co_dian === "function") {
+                return new Promise(function (resolve, reject) {
+                    rpc.query({
+                        model: "pos.order",
+                        method: "search_read",
+                        domain: [["id", "in", server_ids]],
+                        fields: ["name"],
+                        context: session.user_context,
+                    }).then(function (result) {
+                        order.set_l10n_co_dian(
+                            result.length ? result[0].name || false : false
+                        );
+                        resolve();
+                    }).catch(function (error) {
+                        reject(error);
+                    });
+                }).then(function () {
+                    if (order.is_to_email()) {
+                        return self.send_receipt_to_customer(server_ids);
+                    }
+                    return Promise.resolve();
+                });
+            }
+            return this._super(order, server_ids);
+        },
+    });
 
     screens.ProductScreenWidget.include(_.extend({}, UnsyncedOrderGuard, {
         modification_selectors:

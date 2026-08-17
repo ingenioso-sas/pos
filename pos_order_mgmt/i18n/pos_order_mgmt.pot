@@ -55,8 +55,39 @@ msgid "Amount Too High"
 msgstr ""
 
 #. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#, python-format
+msgid ""
+"A POS order cannot combine sales and returns. Please process the return "
+"and the sale in separate orders."
+msgstr ""
+
+#. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid ""
+"A return order can only contain returned products (negative quantities). "
+"To sell products, create a new order instead."
+msgstr ""
+
+#. module: pos_order_mgmt
 #. openerp-web
-#: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Mixed order not allowed"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid "No sales on return orders"
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
 #, python-format
 msgid "Back"
 msgstr ""
@@ -264,6 +295,24 @@ msgstr ""
 
 #. module: pos_order_mgmt
 #. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid ""
+"You cannot sell products in a return order. Please finish the return and "
+"create a new order to sell."
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid ""
+"You cannot change a return line to a positive quantity. To sell products, "
+"create a new order instead."
+msgstr ""
+
+#. module: pos_order_mgmt
+#. openerp-web
 #: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
 #, python-format
 msgid "Qty"
@@ -338,6 +387,14 @@ msgstr ""
 #, python-format
 msgid ""
 "The refunded amount for %s (%s) cannot exceed the original amount (%s)."
+msgstr ""
+
+#. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#, python-format
+msgid ""
+"The product '%s' from order %s cannot be returned: the total returned "
+"quantity exceeds the quantity originally purchased in that order."
 msgstr ""
 
 #. module: pos_order_mgmt

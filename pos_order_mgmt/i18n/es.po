@@ -55,6 +55,37 @@ msgid "Amount Too High"
 msgstr "Cantidad demasiado alta"
 
 #. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#, python-format
+msgid ""
+"A POS order cannot combine sales and returns. Please process the return "
+"and the sale in separate orders."
+msgstr "Una orden del TPV no puede combinar ventas y devoluciones. Procese la devolución y la venta en órdenes separadas."
+
+#. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid ""
+"A return order can only contain returned products (negative quantities). "
+"To sell products, create a new order instead."
+msgstr "Una orden de devolución solo puede contener productos devueltos (cantidades negativas). Para vender productos, cree una nueva orden."
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Mixed order not allowed"
+msgstr "Orden mixta no permitida"
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid "No sales on return orders"
+msgstr "No se permiten ventas en órdenes de devolución"
+
+#. module: pos_order_mgmt
 #. openerp-web
 #: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
 #, python-format
@@ -264,6 +295,24 @@ msgstr "El producto %s tiene cantidad cero. No puede tener líneas de pedido con
 
 #. module: pos_order_mgmt
 #. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid ""
+"You cannot sell products in a return order. Please finish the return and "
+"create a new order to sell."
+msgstr "No puede vender productos en una orden de devolución. Finalice la devolución y cree una nueva orden para vender."
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid ""
+"You cannot change a return line to a positive quantity. To sell products, "
+"create a new order instead."
+msgstr "No puede cambiar una línea de devolución a una cantidad positiva. Para vender productos, cree una nueva orden."
+
+#. module: pos_order_mgmt
+#. openerp-web
 #: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
 #, python-format
 msgid "Qty"
@@ -339,6 +388,14 @@ msgstr "Orden devuelta:"
 msgid ""
 "The refunded amount for %s (%s) cannot exceed the original amount (%s)."
 msgstr "El monto reembolsado para %s (%s) no puede exceder el monto original (%s)."
+
+#. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#, python-format
+msgid ""
+"The product '%s' from order %s cannot be returned: the total returned "
+"quantity exceeds the quantity originally purchased in that order."
+msgstr "El producto '%s' de la orden %s no puede devolverse: la cantidad total devuelta supera la cantidad comprada originalmente en esa orden."
 
 #. module: pos_order_mgmt
 #. openerp-web
