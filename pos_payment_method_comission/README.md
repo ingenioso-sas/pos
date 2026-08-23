@@ -31,6 +31,12 @@ Para configurar un método de pago con comisión:
    - **Commission Journal**: Seleccionar el diario contable (tipo general) donde se registrarán los asientos. **¿Por qué este campo?** Todo asiento contable (`account.move`) en Odoo necesita un Diario. Esto permite agrupar los gastos por comisiones en un diario específico (ej. "Operaciones Varias") en lugar de mezclar el gasto en el mismo diario de ingresos de banco/efectivo.
    - **Commission Expense Account**: Seleccionar una cuenta de tipo gasto para registrar el costo de la comisión. **¿Por qué este campo?** Un método de pago suele tener configurado un diario, y ese diario ya tiene cuentas por defecto (que normalmente son de Activo, es decir, el dinero en bancos). La comisión, sin embargo, es un Gasto operativo. Esta cuenta le dice al sistema que el dinero de la comisión se registre en una cuenta de Gastos y Comisiones Bancarias, logrando así un asiento preciso (Débito al Gasto y Crédito a la cuenta por cobrar del método de pago).
 
+### 3. Decisiones de Diseño: ¿Por qué separar "Expense Account" del "Journal"?
+Técnicamente, se podría configurar la cuenta de gasto como la cuenta de débito por defecto del "Commission Journal". Sin embargo, el campo "Commission Expense Account" se diseñó independientemente en el método de pago por tres motivos clave:
+1. **Reutilización de Diarios:** Si tienes múltiples métodos de pago (Visa, Mastercard, Addi) y quieres que cada uno vaya a una subcuenta de gastos diferente (ej. 530515 para Visa, 530516 para Mastercard), puedes usar **un solo diario** ("Operaciones Varias") para todos y solo variar la cuenta en cada método. De lo contrario, tendrías que crear un diario distinto para cada método de pago.
+2. **Uso de Diarios Genéricos:** Los diarios generales o misceláneos rara vez tienen una cuenta por defecto configurada. Obligar a establecerla en el método de pago evita errores al crear el asiento de comisión.
+3. **Evitar Errores de Configuración:** La cuenta por defecto de un diario es una configuración global. Si otro usuario cambia la cuenta de débito de "Operaciones Varias" para otro propósito, dañaría el funcionamiento automático de las comisiones del TPV. Al definir la cuenta directamente en el método de pago, se blinda y aísla la automatización.
+
 ## Uso en Punto de Venta
 1. Abrir una sesión del Punto de Venta.
 2. Procesar una venta normalmente.

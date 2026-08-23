@@ -30,6 +30,12 @@ Ve a **Punto de Venta > Configuración > Métodos de Pago**, selecciona un méto
 * **Commission Journal y Account**:
   * **Commission Journal:** Diario contable (General). Todo asiento contable en Odoo requiere un diario. Esto te permite agrupar las comisiones (gastos) en un diario de "Operaciones Varias" en lugar de ensuciar el diario del banco.
   * **Commission Expense Account:** Cuenta de Gasto. Aunque el diario de un método de pago tiene una cuenta de débito por defecto (tu cuenta bancaria real/activo), la comisión es un gasto operativo. Con esta cuenta evitas que el gasto se confunda con el dinero de tu banco.
+  
+  *¿Por qué se separa la cuenta de gasto del diario?*
+  Técnicamente la cuenta de gasto podría configurarse como la cuenta por defecto del "Commission Journal", pero se separó por diseño:
+  
+  1. **Reutilización:** Permite usar un solo diario genérico (ej. "Operaciones Varias") para todos tus métodos de pago (Visa, Addi), enviando el gasto a diferentes cuentas contables (ej. 530515, 530516) sin tener que crear múltiples diarios.
+  2. **Blindaje de Configuración:** Las cuentas por defecto de un diario son globales. Si alguien las modifica accidentalmente, dañaría el TPV. Al definir la cuenta directamente en el método de pago, la automatización queda protegida.
 * **Impuestos de la Comisión**: Selecciona los impuestos creados en tu Contabilidad (ej. IVA 19% Compras, ReteRenta 1.5%) que se calculan sobre el gasto base.
 * **Política de Devolución**:
   * *Devolución Real Permitida:* Comportamiento estándar.
