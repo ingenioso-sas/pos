@@ -1,13 +1,13 @@
-# Copyright (C) 2025-Today: Ing.Factura S.L
-# @author: Ing.Factura S.L
+# Copyright (C) 2025-Today: Ingenioso Co
+# @author: Ingenioso Co
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 {
     "name": "Point of Sale - Payment Method Commission",
     "summary": "Allows to define commissions for PoS payment methods.",
     "version": "13.0.3.0.0",
     "category": "Point of Sale",
-    "author": "Ing.Factura S.L",
-    "website": "https://www.ingfactura.com",
+    "author": "Ingenioso Co",
+    "website": "https://ingenioso.co",
     "license": "AGPL-3",
     "depends": ["point_of_sale", "account"],
     "data": [

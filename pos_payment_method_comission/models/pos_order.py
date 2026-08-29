@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2025-Today: Ing.Factura S.L
-# @author: Ing.Factura S.L
+# Copyright (C) 2025-Today: Ingenioso Co
+# @author: Ingenioso Co
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 
 import logging

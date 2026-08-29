@@ -1,7 +1,7 @@
 # AI Agent Context: pos_payment_method_comission
 
 ## 1. Overview
-This is an Odoo 13 addon created by Ing.Factura S.L. It introduces the ability to calculate internal commissions (merchant fees) on Point of Sale (PoS) payment methods and automatically generate the corresponding accounting journal entries as expenses.
+This is an Odoo 13 addon created by Ingenioso Co. It introduces the ability to calculate internal commissions (merchant fees) on Point of Sale (PoS) payment methods and automatically generate the corresponding accounting journal entries as expenses.
 
 ## 2. Technical Architecture & Models
 
