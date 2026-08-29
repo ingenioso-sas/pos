@@ -55,6 +55,37 @@ msgid "Amount Too High"
 msgstr "Cantidad demasiado alta"
 
 #. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#, python-format
+msgid ""
+"A POS order cannot combine sales and returns. Please process the return "
+"and the sale in separate orders."
+msgstr "Una orden del TPV no puede combinar ventas y devoluciones. Procese la devolución y la venta en órdenes separadas."
+
+#. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid ""
+"A return order can only contain returned products (negative quantities). "
+"To sell products, create a new order instead."
+msgstr "Una orden de devolución solo puede contener productos devueltos (cantidades negativas). Para vender productos, cree una nueva orden."
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
+#, python-format
+msgid "Mixed order not allowed"
+msgstr "Orden mixta no permitida"
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid "No sales on return orders"
+msgstr "No se permiten ventas en órdenes de devolución"
+
+#. module: pos_order_mgmt
 #. openerp-web
 #: code:addons/pos_order_mgmt/static/src/xml/pos.xml:0
 #, python-format
@@ -204,6 +235,11 @@ msgid "Payment Method Not Allowed"
 msgstr "Método de pago no permitido"
 
 #. module: pos_order_mgmt
+#: model:ir.model.fields,field_description:pos_order_mgmt.field_pos_config__pending_order_modification_confirmation
+msgid "Pending Order Modification Confirmation"
+msgstr "Confirmación de Modificación de Orden Pendiente"
+
+#. module: pos_order_mgmt
 #: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__return_bypass_payment_method_ids
 msgid ""
 "Payment methods that can be used for returns even if they were not used in "
@@ -256,6 +292,24 @@ msgid ""
 "Product %s has zero quantity. You cannot have order lines with a quantity of"
 " zero (0)."
 msgstr "El producto %s tiene cantidad cero. No puede tener líneas de pedido con una cantidad de cero (0)."
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid ""
+"You cannot sell products in a return order. Please finish the return and "
+"create a new order to sell."
+msgstr "No puede vender productos en una orden de devolución. Finalice la devolución y cree una nueva orden para vender."
+
+#. module: pos_order_mgmt
+#. openerp-web
+#: code:addons/pos_order_mgmt/static/src/js/models.js:0
+#, python-format
+msgid ""
+"You cannot change a return line to a positive quantity. To sell products, "
+"create a new order instead."
+msgstr "No puede cambiar una línea de devolución a una cantidad positiva. Para vender productos, cree una nueva orden."
 
 #. module: pos_order_mgmt
 #. openerp-web
@@ -336,6 +390,14 @@ msgid ""
 msgstr "El monto reembolsado para %s (%s) no puede exceder el monto original (%s)."
 
 #. module: pos_order_mgmt
+#: code:addons/pos_order_mgmt/models/pos_order.py:0
+#, python-format
+msgid ""
+"The product '%s' from order %s cannot be returned: the total returned "
+"quantity exceeds the quantity originally purchased in that order."
+msgstr "El producto '%s' de la orden %s no puede devolverse: la cantidad total devuelta supera la cantidad comprada originalmente en esa orden."
+
+#. module: pos_order_mgmt
 #. openerp-web
 #: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
 #, python-format
@@ -366,13 +428,18 @@ msgstr "Productos desconocidos"
 #. module: pos_order_mgmt
 #. openerp-web
 #: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
-#: code:addons/pos_order_mgmt/static/src/js/widgets.js:0
 #, python-format
 msgid ""
-"Warning: Order pending synchronization. To edit it, type exactly 'modificar "
-"orden' and confirm. If you prefer not to modify it, cancel and create a new "
-"order:"
-msgstr "Advertencia: Pedido pendiente de sincronización. Para editarlo escribe exactamente 'modificar orden' y confirma. Si prefieres no modificarlo, cancelar y crear un nuevo pedido:"
+"Warning: Order pending synchronization. To edit it, type exactly '%s' and "
+"confirm. If you prefer not to modify it, cancel and create a new order:"
+msgstr "Advertencia: Pedido pendiente de sincronización. Para editarlo escribe exactamente '%s' y confirma. Si prefieres no modificarlo, cancelar y crear un nuevo pedido:"
+
+#. module: pos_order_mgmt
+#: model:ir.model.fields,help:pos_order_mgmt.field_pos_config__pending_order_modification_confirmation
+msgid ""
+"Word the cashier must type in the PoS to confirm that an unsynchronized "
+"order can be modified."
+msgstr "Palabra que el cajero debe escribir en el TPV para confirmar que una orden no sincronizada puede ser modificada."
 
 #. module: pos_order_mgmt
 #. openerp-web

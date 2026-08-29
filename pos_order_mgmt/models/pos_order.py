@@ -103,33 +103,78 @@ class PosOrder(models.Model):
             condition += self._prepare_filter_query_for_pos(pos_session_id, query)
         field_names = self._prepare_fields_for_pos_list()
 
-        total_items = self.search_count(
-            condition
-        )
-        result_query = self.search_read(
-            condition,
-            field_names,
-            limit=config.iface_load_done_order_max_qty,
-            offset= page*config.iface_load_done_order_max_qty
-        )
+        page_size = config.iface_load_done_order_max_qty
+        total_items = self.search_count(condition)
+        result_query = []
+        if page_size:
+            result_query = self.search_read(
+                condition,
+                field_names,
+                limit=page_size,
+                offset=page * page_size,
+            )
         return {
             "items": result_query,
             "current_page": page,
-            "nex_page": page + 1 if (page + 1) * config.iface_load_done_order_max_qty < total_items else None,
+            "next_page": (
+                page + 1
+                if page_size and (page + 1) * page_size < total_items
+                else None
+            ),
             "prev_page": page - 1 if page > 0 else None,
             "total_items": total_items,
-            "total_pages": (total_items + config.iface_load_done_order_max_qty - 1) // config.iface_load_done_order_max_qty,
-            "page_size": config.iface_load_done_order_max_qty
+            "total_pages": (
+                (total_items + page_size - 1) // page_size if page_size else 0
+            ),
+            "page_size": page_size,
         }
 
     @api.model
     def create_from_ui(self, orders, *args, **kwargs):
         for order in orders:
+            self._check_no_mixed_sign_lines(order)
             returned_order_id = order.get("returned_order_id") or \
                 order.get("data", {}).get("returned_order_id")
             if returned_order_id:
                 self._check_refund_quantities(returned_order_id, order)
         return super().create_from_ui(orders, *args, **kwargs)
+
+    @api.model
+    def _check_no_mixed_sign_lines(self, order):
+        """A POS order must be either a sale or a return, never both.
+
+        Reject orders that mix positive (sale) and negative (return) line
+        quantities, and reject return orders that only contain positive lines
+        (a return order must only refund products).
+        """
+        lines_data = order.get("data", {}).get("lines", [])
+        if not lines_data:
+            return
+        is_return = bool(
+            order.get("returned_order_id")
+            or order.get("data", {}).get("returned_order_id")
+        )
+        has_positive = False
+        has_negative = False
+        for line_vals in lines_data:
+            line_data = line_vals[2] if isinstance(
+                line_vals, (list, tuple)) and len(line_vals) == 3 else line_vals
+            qty = line_data.get("qty", 0)
+            if qty > 0:
+                has_positive = True
+            elif qty < 0:
+                has_negative = True
+        if has_positive and has_negative:
+            raise UserError(_(
+                "A POS order cannot combine sales and returns. "
+                "Please process the return and the sale in separate orders."
+            ))
+        if is_return and has_positive and not has_negative:
+            raise UserError(_(
+                "A return order can only contain returned products "
+                "(negative quantities). To sell products, create a new "
+                "order instead."
+            ))
 
     @api.model
     def _check_refund_quantities(self, returned_order_id, order):
@@ -139,29 +184,43 @@ class PosOrder(models.Model):
         lines_data = order.get("data", {}).get("lines", [])
         if not lines_data:
             return
+        original_qty_by_product = {}
+        for line in original.lines:
+            original_qty_by_product[line.product_id.id] = (
+                original_qty_by_product.get(line.product_id.id, 0) + line.qty
+            )
+        refunded_qty_by_product = {}
+        refunds = original.refund_order_ids.filtered(
+            lambda refund: refund.state in ("paid", "done", "invoiced")
+        )
+        if refunds:
+            refunded_lines = self.env["pos.order.line"].search(
+                [("order_id", "in", refunds.ids)]
+            )
+            for refunded_line in refunded_lines:
+                refunded_qty_by_product[refunded_line.product_id.id] = (
+                    refunded_qty_by_product.get(refunded_line.product_id.id, 0)
+                    + abs(refunded_line.qty)
+                )
         for line_vals in lines_data:
             line_data = line_vals[2] if isinstance(
                 line_vals, (list, tuple)) and len(line_vals) == 3 else line_vals
             product_id = line_data.get("product_id")
-            qty = abs(line_data.get("qty", 0))
-            if not product_id or not qty:
+            qty = line_data.get("qty", 0)
+            # Only the refunded (negative) lines are subject to the duplicate
+            # refund check. Positive lines are new sales on the same order and
+            # must not be validated against the original order.
+            if not product_id or qty >= 0:
                 continue
-            already_refunded = sum(
-                abs(rl.qty)
-                for refund in original.refund_order_ids
-                if refund.state in ("paid", "done", "invoiced")
-                for rl in refund.lines
-                if rl.product_id.id == product_id
-            )
-            original_qty = sum(
-                l.qty for l in original.lines
-                if l.product_id.id == product_id
-            )
+            qty = abs(qty)
+            already_refunded = refunded_qty_by_product.get(product_id, 0)
+            original_qty = original_qty_by_product.get(product_id, 0)
             if already_refunded + qty > original_qty + 0.001:
                 product_name = line_data.get("product_name", product_id)
                 raise UserError(_(
-                    "The product '%s' from order %s has already been fully "
-                    "refunded. Cannot create duplicate refund."
+                    "The product '%s' from order %s cannot be returned: the "
+                    "total returned quantity exceeds the quantity originally "
+                    "purchased in that order."
                 ) % (product_name, original.pos_reference))
 
     def _prepare_done_order_for_pos(self):

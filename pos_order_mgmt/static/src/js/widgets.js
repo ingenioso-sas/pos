@@ -8,6 +8,8 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
 
     var core = require("web.core");
     var _t = core._t;
+    var session = require("web.session");
+    var rpc = require("web.rpc");
     var PosBaseWidget = require("point_of_sale.BaseWidget");
     var screens = require("point_of_sale.screens");
     var gui = require("point_of_sale.gui");
@@ -17,6 +19,69 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
     var QWeb = core.qweb;
     var ScreenWidget = screens.ScreenWidget;
     var DomCache = screens.DomCache;
+
+    var DEFAULT_MODIFY_CONFIRMATION = "modificar orden";
+
+    // Shared guard to prevent editing orders that are pending
+    // synchronization until the cashier explicitly confirms it.
+    var UnsyncedOrderGuard = {
+        bind_modification_guard: function () {
+            if (!this.el) {
+                return;
+            }
+            var self = this;
+            this.el.addEventListener(
+                "click",
+                function (event) {
+                    self._on_modification_click(event);
+                },
+                true
+            );
+        },
+        _on_modification_click: function (event) {
+            var $target = $(event.target);
+            if (!$target.closest(this.modification_selectors).length) {
+                return;
+            }
+            var order = this.pos.get_order();
+            if (!order) {
+                return;
+            }
+            var pending_orders = this.pos.db.get_orders();
+            var is_pending = _.find(pending_orders, function (o) {
+                return o.id === order.uid;
+            });
+            if (!is_pending || order.allowed_to_modify) {
+                return;
+            }
+            event.stopPropagation();
+            event.preventDefault();
+            var self = this;
+            var confirmation_word =
+                this.pos.config.pending_order_modification_confirmation ||
+                DEFAULT_MODIFY_CONFIRMATION;
+            this.gui.show_popup("textinput", {
+                title: _.str.sprintf(
+                    _t(
+                        "Warning: Order pending synchronization. To edit it, type exactly '%s' and confirm. If you prefer not to modify it, cancel and create a new order:"
+                    ),
+                    confirmation_word
+                ),
+                confirm: function (value) {
+                    if (value === confirmation_word) {
+                        order.allowed_to_modify = true;
+                    } else {
+                        self.gui.show_popup("error", {
+                            title: _t("Modificación rechazada"),
+                            body: _t(
+                                "No se ha confirmado la modificación. Debe crear una nueva orden para continuar."
+                            ),
+                        });
+                    }
+                },
+            });
+        },
+    };
 
     screens.ReceiptScreenWidget.include({
         render_receipt: function () {
@@ -151,6 +216,9 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                 if (!$container.children().length) {
                     $container.html('<div class="loader"><i class="fa fa-spinner fa-spin" /> Loading...</div>');
                     this.load_order_data(order_id).then(function (order_data) {
+                        if (!order_data) {
+                            return;
+                        }
                         var details_html = QWeb.render('OrderDetails', {
                             widget: self,
                             order: order_data,
@@ -258,6 +326,9 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
 
         order_action: function (order_data, action) {
+            if (!order_data) {
+                return;
+            }
             if (this.old_order !== null) {
                 this.gui.back();
             }
@@ -534,7 +605,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     self.orders = result.items;
                     self.pagination = {
                         current_page: result.current_page,
-                        next_page: result.nex_page,
+                        next_page: result.next_page,
                         prev_page: result.prev_page,
                         total_items: result.total_items,
                         total_pages: result.total_pages,
@@ -551,7 +622,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                         }
                     });
                 })
-                .catch(function (error, event) {
+                .catch(function (error) {
                     if (parseInt(error.code, 10) === 200) {
                         // Business Logic Error, not a connection problem
                         self.gui.show_popup("error-traceback", {
@@ -567,7 +638,6 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                             ),
                         });
                     }
-                    event?.preventDefault();
                 });
         },
 
@@ -645,10 +715,11 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
     });
 
-    screens.PaymentScreenWidget.include({
+    screens.PaymentScreenWidget.include(_.extend({}, UnsyncedOrderGuard, {
+        modification_selectors:
+            ".paymentmethods, .numpad, .payment-numpad, .js_customer, .js_invoice, .js_electronic_invoice",
         renderElement: function () {
             this._super();
-            var self = this;
             var order = this.pos.get_order();
             if (order && order.returned_order_id) {
                 // Disable Invoice button
@@ -669,38 +740,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             }
 
             // Intercept modification clicks on Payment Screen (capture phase)
-            if (this.el) {
-                this.el.addEventListener('click', function (event) {
-                    var $target = $(event.target);
-                    var is_modification = $target.closest('.paymentmethods, .numpad, .payment-numpad, .js_customer, .js_invoice, .js_electronic_invoice').length > 0;
-                    if (is_modification) {
-                        var active_order = self.pos.get_order();
-                        if (active_order) {
-                            var pending_orders = self.pos.db.get_orders();
-                            var is_pending = _.find(pending_orders, function (o) {
-                                return o.id === active_order.uid;
-                            });
-                            if (is_pending && !active_order.allowed_to_modify) {
-                                event.stopPropagation();
-                                event.preventDefault();
-                                self.gui.show_popup('textinput', {
-                                    title: _t("Warning: Order pending synchronization. To edit it, type exactly 'modificar orden' and confirm. If you prefer not to modify it, cancel and create a new order:"),
-                                    confirm: function (value) {
-                                        if (value === "modificar orden") {
-                                            active_order.allowed_to_modify = true;
-                                        } else {
-                                            self.gui.show_popup("error", {
-                                                title: _t("Modificación rechazada"),
-                                                body: _t("No se ha confirmado la modificación. Debe crear una nueva orden para continuar."),
-                                            });
-                                        }
-                                    },
-                                });
-                            }
-                        }
-                    }
-                }, true);
-            }
+            this.bind_modification_guard();
         },
         click_paymentmethods: function (id) {
             var order = this.pos.get_order();
@@ -724,8 +764,43 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         order_is_valid: function (force_validation) {
             var order = this.pos.get_order();
             var orderlines = order.get_orderlines();
+
+            // An order must be either a sale or a return, never both, and a
+            // return order must only contain returned (negative) lines.
+            var has_positive = false;
+            var has_negative = false;
             for (var i = 0; i < orderlines.length; i++) {
-                var line = orderlines[i];
+                var q = orderlines[i].get_quantity();
+                if (q > 0) {
+                    has_positive = true;
+                } else if (q < 0) {
+                    has_negative = true;
+                }
+            }
+            if (has_positive && has_negative) {
+                this.gui.show_popup("error", {
+                    title: _t("Mixed order not allowed"),
+                    body: _t(
+                        "A POS order cannot combine sales and returns. " +
+                        "Please process the return and the sale in separate orders."
+                    ),
+                });
+                return false;
+            }
+            if (order.returned_order_id && has_positive && !has_negative) {
+                this.gui.show_popup("error", {
+                    title: _t("No sales on return orders"),
+                    body: _t(
+                        "A return order can only contain returned products " +
+                        "(negative quantities). To sell products, create a " +
+                        "new order instead."
+                    ),
+                });
+                return false;
+            }
+
+            for (var j = 0; j < orderlines.length; j++) {
+                var line = orderlines[j];
                 if (line.get_quantity() === 0) {
                     this.gui.show_popup("error", {
                         title: _t("Zero Quantity Line"),
@@ -798,46 +873,54 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             }
             return this._super(force_validation);
         },
-    });
+    }));
 
-    screens.ProductScreenWidget.include({
-        renderElement: function () {
-            this._super();
+    screens.PaymentScreenWidget.include({
+        post_push_order_resolve: function (order, server_ids) {
             var self = this;
-            if (this.el) {
-                this.el.addEventListener('click', function (event) {
-                    var $target = $(event.target);
-                    var is_modification = $target.closest('.numpad, .product-list, .set-customer, .pay, .orderline').length > 0;
-                    if (is_modification) {
-                        var order = self.pos.get_order();
-                        if (order) {
-                            var pending_orders = self.pos.db.get_orders();
-                            var is_pending = _.find(pending_orders, function (o) {
-                                return o.id === order.uid;
-                            });
-                            if (is_pending && !order.allowed_to_modify) {
-                                event.stopPropagation();
-                                event.preventDefault();
-                                self.gui.show_popup('textinput', {
-                                    title: _t("Warning: Order pending synchronization. To edit it, type exactly 'modificar orden' and confirm. If you prefer not to modify it, cancel and create a new order:"),
-                                    confirm: function (value) {
-                                        if (value === "modificar orden") {
-                                            order.allowed_to_modify = true;
-                                        } else {
-                                            self.gui.show_popup("error", {
-                                                title: _t("Modificación rechazada"),
-                                                body: _t("No se ha confirmado la modificación. Debe crear una nueva orden para continuar."),
-                                            });
-                                        }
-                                    },
-                                });
-                            }
-                        }
+            // l10n_co_pos (when installed) overrides this method to store the
+            // backend order name on the ticket and crashes with a TypeError
+            // when search_read returns no rows (result[0] is undefined), e.g.
+            // on a combined return + sale order. Replicate its behaviour here
+            // guarded, keeping the base email behaviour intact.
+            var is_colombian =
+                typeof this.pos.is_colombian_country === "function" &&
+                this.pos.is_colombian_country();
+            if (is_colombian && typeof order.set_l10n_co_dian === "function") {
+                return new Promise(function (resolve, reject) {
+                    rpc.query({
+                        model: "pos.order",
+                        method: "search_read",
+                        domain: [["id", "in", server_ids]],
+                        fields: ["name"],
+                        context: session.user_context,
+                    }).then(function (result) {
+                        order.set_l10n_co_dian(
+                            result.length ? result[0].name || false : false
+                        );
+                        resolve();
+                    }).catch(function (error) {
+                        reject(error);
+                    });
+                }).then(function () {
+                    if (order.is_to_email()) {
+                        return self.send_receipt_to_customer(server_ids);
                     }
-                }, true);
+                    return Promise.resolve();
+                });
             }
+            return this._super(order, server_ids);
         },
     });
+
+    screens.ProductScreenWidget.include(_.extend({}, UnsyncedOrderGuard, {
+        modification_selectors:
+            ".numpad, .product-list, .set-customer, .pay, .orderline",
+        renderElement: function () {
+            this._super();
+            this.bind_modification_guard();
+        },
+    }));
 
     return {
         ListOrderButtonWidget: ListOrderButtonWidget,

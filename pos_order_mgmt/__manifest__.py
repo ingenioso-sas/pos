@@ -5,9 +5,9 @@
 {
     "name": "POS Frontend Orders Management",
     "summary": "Manage old POS Orders from the frontend",
-    "version": "13.0.1.6.1",
+    "version": "13.0.1.7.1",
     "category": "Point of Sale",
-    "author": "GRAP, " "Tecnativa, " "Odoo Community Association (OCA)",
+    "author": "GRAP, " "Tecnativa, " "Odoo Community Association (OCA).",
     "website": "https://github.com/OCA/pos",
     "license": "AGPL-3",
     "depends": ["point_of_sale"],
