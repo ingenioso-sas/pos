@@ -19,18 +19,6 @@
         </t>
     </t>
 
-    <!-- Add total commission to the receipt -->
-    <t t-extend="OrderReceipt">
-        <t t-jquery=".pos-receipt-right-align" t-operation="before">
-             <t t-if="receipt.total_commission > 0">
-                <tr>
-                    <td>Commission:</td>
-                    <td class="pos-receipt-right-align">
-                        <t t-esc="widget.format_currency(receipt.total_commission)"/>
-                    </td>
-                </tr>
-            </t>
-        </t>
-    </t>
+    <!-- Add total commission to the receipt (REMOVED: Commission is an internal merchant cost) -->
 
 </templates>
