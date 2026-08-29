@@ -28,6 +28,7 @@ License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
                     attrs="{'invisible': [('has_commission', '=', False)], 'required': [('has_commission', '=', True)]}"
                     context="{'company_id': company_id}"/>
                 <field name="commission_tax_ids" widget="many2many_tags" attrs="{'invisible': [('has_commission', '=', False)]}"/>
+                <field name="payment_withholding_tax_ids" widget="many2many_tags" attrs="{'invisible': [('has_commission', '=', False)]}"/>
                 
                 <separator string="Políticas de Devolución y Aprobación"/>
                 <field name="refund_policy"/>

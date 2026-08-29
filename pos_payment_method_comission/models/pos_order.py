@@ -27,10 +27,11 @@ class PosOrder(models.Model):
 
     def _create_commission_moves(self, order):
         for payment in order.payment_ids:
-            if payment.payment_method_id.has_commission and payment.commission != 0:
+            if payment.payment_method_id.has_commission and (payment.commission != 0 or payment.payment_method_id.payment_withholding_tax_ids):
                 try:
                     commission_move = self._prepare_commission_move(payment)
-                    commission_move.post()
+                    if commission_move:
+                        commission_move.post()
                 except Exception:
                     _logger.error(
                         "Failed to create commission move for payment %s (order: %s)",
@@ -57,46 +58,80 @@ class PosOrder(models.Model):
             ref_str += _(' (Ref: %s)') % payment.approval_reference
 
         move_lines = []
+        total_receivable = 0.0
 
-        if payment_method.commission_tax_ids:
-            taxes = payment_method.commission_tax_ids.compute_all(
-                amount_in_company_currency,
+        if amount_in_company_currency:
+            if payment_method.commission_tax_ids:
+                taxes = payment_method.commission_tax_ids.compute_all(
+                    amount_in_company_currency,
+                    payment.pos_order_id.company_id.currency_id,
+                    1.0,
+                    product=None,
+                    partner=payment.pos_order_id.partner_id
+                )
+                total_expense = taxes['total_excluded']
+                total_receivable += taxes['total_included']
+
+                # Base expense line
+                move_lines.append((0, 0, {
+                    'name': ref_str,
+                    'account_id': commission_account.id,
+                    'debit': total_expense if total_expense > 0 else 0,
+                    'credit': -total_expense if total_expense < 0 else 0,
+                }))
+
+                # Tax lines
+                for tax_res in taxes['taxes']:
+                    tax_amount = tax_res['amount']
+                    tax_account_id = tax_res.get('account_id') or commission_account.id
+                    move_lines.append((0, 0, {
+                        'name': tax_res['name'],
+                        'account_id': tax_account_id,
+                        'debit': tax_amount if tax_amount > 0 else 0,
+                        'credit': -tax_amount if tax_amount < 0 else 0,
+                    }))
+            else:
+                total_receivable += amount_in_company_currency
+                move_lines.append((0, 0, {
+                    'name': ref_str,
+                    'account_id': commission_account.id,
+                    'debit': amount_in_company_currency if amount_in_company_currency > 0 else 0,
+                    'credit': -amount_in_company_currency if amount_in_company_currency < 0 else 0,
+                }))
+
+        # Calculate withholding taxes based on the total payment amount
+        if payment_method.payment_withholding_tax_ids:
+            payment_amount_in_company_currency = src_currency._convert(
+                payment.amount,
+                payment.pos_order_id.company_id.currency_id,
+                payment.pos_order_id.company_id,
+                payment.pos_order_id.date_order,
+            )
+            withholding_taxes = payment_method.payment_withholding_tax_ids.compute_all(
+                payment_amount_in_company_currency,
                 payment.pos_order_id.company_id.currency_id,
                 1.0,
                 product=None,
                 partner=payment.pos_order_id.partner_id
             )
-            total_expense = taxes['total_excluded']
-            total_receivable = taxes['total_included']
-
-            # Base expense line
-            move_lines.append((0, 0, {
-                'name': ref_str,
-                'account_id': commission_account.id,
-                'debit': total_expense if total_expense > 0 else 0,
-                'credit': -total_expense if total_expense < 0 else 0,
-            }))
-
-            # Tax lines
-            for tax_res in taxes['taxes']:
-                tax_amount = tax_res['amount']
+            # We only care about the tax amounts to debit for withholding (always positive deduction for us)
+            for tax_res in withholding_taxes['taxes']:
+                tax_amount = abs(tax_res['amount'])
+                # Fallback to commission_account.id if the tax doesn't have an account configured
                 tax_account_id = tax_res.get('account_id') or commission_account.id
-                move_lines.append((0, 0, {
-                    'name': tax_res['name'],
-                    'account_id': tax_account_id,
-                    'debit': tax_amount if tax_amount > 0 else 0,
-                    'credit': -tax_amount if tax_amount < 0 else 0,
-                }))
-        else:
-            total_receivable = amount_in_company_currency
-            move_lines.append((0, 0, {
-                'name': ref_str,
-                'account_id': commission_account.id,
-                'debit': amount_in_company_currency if amount_in_company_currency > 0 else 0,
-                'credit': -amount_in_company_currency if amount_in_company_currency < 0 else 0,
-            }))
+                if tax_account_id and tax_amount:
+                    move_lines.append((0, 0, {
+                        'name': _('Retención: %s') % tax_res['name'],
+                        'account_id': tax_account_id,
+                        'debit': tax_amount if tax_amount > 0 else 0,
+                        'credit': -tax_amount if tax_amount < 0 else 0,
+                    }))
+                    total_receivable += tax_amount
 
-        # Credit the payment method's outstanding account
+        if not move_lines:
+            return None
+
+        # Credit the payment method's outstanding account for total deductions (commission + withholding)
         move_lines.append((0, 0, {
             'name': ref_str,
             'account_id': payment.payment_method_id.receivable_account_id.id,

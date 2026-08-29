@@ -49,9 +49,19 @@ class PosPaymentMethod(models.Model):
     )
     commission_tax_ids = fields.Many2many(
         'account.tax',
+        'pos_payment_method_commission_tax_rel',
+        'payment_method_id', 'tax_id',
         string="Impuestos de la Comisión",
         domain=[('type_tax_use', '=', 'purchase')],
         help="Impuestos (IVA, Retenciones) a aplicar sobre la comisión base."
+    )
+    payment_withholding_tax_ids = fields.Many2many(
+        'account.tax',
+        'pos_payment_method_withholding_tax_rel',
+        'payment_method_id', 'tax_id',
+        string="Retenciones sobre el Pago Total",
+        domain=[('type_tax_use', '=', 'purchase')],
+        help="Impuestos (ej. ReteRenta, ReteICA) que la pasarela retiene sobre el valor total de la venta (el pago)."
     )
     require_approval_reference = fields.Boolean(
         string="Pedir Referencia de Aprobación",
