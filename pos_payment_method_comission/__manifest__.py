@@ -3,7 +3,7 @@
 # License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 {
     "name": "Point of Sale - Payment Method Commission",
-    "summary": "Allows to define commissions for PoS payment methods. ",
+    "summary": "Allows to define commissions for PoS payment methods.",
     "version": "13.0.3.0.0",
     "category": "Point of Sale",
     "author": "Ingenioso Co",
