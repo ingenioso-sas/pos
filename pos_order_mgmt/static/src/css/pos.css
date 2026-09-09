@@ -45,7 +45,6 @@
 }
 
 .pos .orderlist-screen .order-line {
-    cursor: pointer;
     transition: background-color 0.2s;
 }
 
@@ -56,6 +55,29 @@
 .pos .orderlist-screen .order-line.highlight {
     background-color: #7f82ac !important;
     color: white;
+}
+
+.pos .orderlist-screen .order-list-toggle-details {
+    cursor: pointer;
+    color: #7f82ac;
+    font-size: 16px;
+    padding: 2px 6px;
+    transition: color 0.2s, background-color 0.2s;
+    border-radius: 4px;
+}
+
+.pos .orderlist-screen .order-list-toggle-details:hover {
+    color: white;
+    background-color: #7f82ac;
+}
+
+.pos .orderlist-screen .order-line.highlight .order-list-toggle-details {
+    color: white;
+}
+
+.pos .orderlist-screen .order-line.highlight .order-list-toggle-details:hover {
+    color: #7f82ac;
+    background-color: white;
 }
 
 .pos .orderlist-screen .order-line-details {

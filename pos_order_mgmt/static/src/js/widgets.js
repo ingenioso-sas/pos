@@ -190,7 +190,8 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                 }
             });
 
-            this.$el.off('click', '.order-line').on('click', '.order-line', function (event) {
+            this.$el.off('click', '.order-list-toggle-details').on('click', '.order-list-toggle-details', function (event) {
+                event.stopPropagation();
                 self.click_order_line(event);
             });
 
@@ -199,7 +200,8 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
 
         click_order_line: function (event) {
             var self = this;
-            var $line = $(event.currentTarget);
+            var $button = $(event.currentTarget);
+            var $line = $button.closest('.order-line');
             var order_id = parseInt($line.data('order-id'), 10);
             var $details = $line.next('.order-line-details');
 
@@ -207,9 +209,11 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                 // Hide all other details
                 this.$('.order-line-details').addClass('o_hidden');
                 this.$('.order-line').removeClass('highlight');
+                this.$('.order-list-toggle-details i').removeClass('fa-chevron-down').addClass('fa-chevron-right');
 
                 $details.removeClass('o_hidden');
                 $line.addClass('highlight');
+                $button.find('i').removeClass('fa-chevron-right').addClass('fa-chevron-down');
 
                 // Load details if not loaded
                 var $container = $details.find('.order-details-container');
@@ -217,6 +221,13 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     $container.html('<div class="loader"><i class="fa fa-spinner fa-spin" /> Loading...</div>');
                     this.load_order_data(order_id).then(function (order_data) {
                         if (!order_data) {
+                            // The load failed (the error popup was already shown
+                            // by load_order_data): remove the loading overlay and
+                            // collapse the row so the screen does not stay frozen.
+                            $container.empty();
+                            $details.addClass('o_hidden');
+                            $line.removeClass('highlight');
+                            $button.find('i').removeClass('fa-chevron-down').addClass('fa-chevron-right');
                             return;
                         }
                         var details_html = QWeb.render('OrderDetails', {
@@ -229,6 +240,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             } else {
                 $details.addClass('o_hidden');
                 $line.removeClass('highlight');
+                $button.find('i').removeClass('fa-chevron-down').addClass('fa-chevron-right');
             }
         },
 
