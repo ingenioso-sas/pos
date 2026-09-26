@@ -81,4 +81,60 @@ odoo.define("pos_order_mgmt.models", function(require) {
             return orderline_super.set_quantity.apply(this, arguments);
         },
     });
+
+    // Deshabilita solo la impresión del PDF de factura en la validación.
+    // La facturación contable se mantiene: se envía con to_invoice=true,
+    // el backend crea el account.move con normalidad.
+    models.PosModel = models.PosModel.extend({
+        push_and_invoice_order: function(order) {
+            var self = this;
+            var invoiced = new Promise(function(
+                resolveInvoiced,
+                rejectInvoiced
+            ) {
+                if (!order.get_client()) {
+                    rejectInvoiced({
+                        code: 400,
+                        message: "Missing Customer",
+                        data: {},
+                    });
+                } else {
+                    var order_id = self.db.add_order(order.export_as_JSON());
+                    self.flush_mutex.exec(function() {
+                        var done = new Promise(function(
+                            resolveDone,
+                            rejectDone
+                        ) {
+                            var transfer = self._flush_orders(
+                                [self.db.get_order(order_id)],
+                                { timeout: 30000, to_invoice: true }
+                            );
+                            transfer.catch(function(error) {
+                                rejectInvoiced(error);
+                                rejectDone();
+                            });
+                            transfer.then(function(order_server_id) {
+                                if (
+                                    order_server_id &&
+                                    order_server_id.length
+                                ) {
+                                    resolveInvoiced(order_server_id);
+                                    resolveDone();
+                                } else {
+                                    rejectInvoiced({
+                                        code: 401,
+                                        message: "Backend Invoice",
+                                        data: { order: order },
+                                    });
+                                    rejectDone();
+                                }
+                            });
+                        });
+                        return done;
+                    });
+                }
+            });
+            return invoiced;
+        },
+    });
 });
