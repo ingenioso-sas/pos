@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_advance_balance_report,advance.balance.report,model_advance_balance_report,base.group_user,1,0,0,0
+access_advance_balance_report_line,advance.balance.report.line,model_advance_balance_report_line,base.group_user,1,1,1,1
+access_pay_advance_wizard,pay.advance.wizard,model_pay_advance_wizard,account.group_account_manager,1,1,1,0

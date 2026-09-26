@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Producto auxiliar de depósito: servicio, sin stock ni impuestos.
+         La cuenta de ingreso se sincroniza con la cuenta de anticipos
+         (res.company._sync_deposit_product_income). Su venta en TPV deja
+         el efectivo/banco en la sesión como una orden normal. -->
+    <record id="product_template_pos_advance_deposit" model="product.template">
+        <field name="name">Anticipo / Saldo a Favor (TPV)</field>
+        <field name="type">service</field>
+        <field name="available_in_pos">True</field>
+        <field name="sale_ok">True</field>
+        <field name="purchase_ok">False</field>
+        <field name="taxes_id" eval="[(6, 0, [])]"/>
+        <field name="supplier_taxes_id" eval="[(6, 0, [])]"/>
+    </record>
+</odoo>
