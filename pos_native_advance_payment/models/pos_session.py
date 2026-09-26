@@ -190,6 +190,33 @@ class PosSession(models.Model):
         total = sum(-(o.amount_total or 0.0) for o in refund_orders)
         if total <= 0.001:
             return
+        # El cierre nativo puede haber emparejado la RINV de la devolución
+        # contra el Dr del propio asiento de sesión, cerrando la RINV y
+        # dejando el Cr del método huérfano: el saldo queda invisible (ni
+        # pagos ni notas lo ven). Se deshace ese pareo para que el crédito
+        # vivo quede en la RINV y la sesión netee a cero.
+        for refund in refund_orders:
+            rinv = refund.account_move
+            if not rinv or rinv.type != 'out_refund' \
+                    or rinv.state != 'posted':
+                continue
+            bad = self.env['account.partial.reconcile'].search([
+                ('debit_move_id.move_id', '=', self.move_id.id),
+                ('credit_move_id.move_id', '=', rinv.id),
+            ]) | self.env['account.partial.reconcile'].search([
+                ('debit_move_id.move_id', '=', rinv.id),
+                ('credit_move_id.move_id', '=', self.move_id.id),
+            ])
+            bad = bad.filtered(
+                lambda p: p.debit_move_id.account_id == rxc
+                and p.credit_move_id.account_id == rxc)
+            if bad:
+                (bad.mapped('debit_move_id')
+                 | bad.mapped('credit_move_id')).remove_move_reconcile()
+                _logger.info(
+                    'Reembolso %s: deshecho pareo RINV↔sesión (%s); '
+                    'el crédito vuelve a la nota.',
+                    refund.name, bad.ids)
         method_names = self.env['pos.payment.method'].search(
             [('is_advance_payment', '=', True)]).mapped('name')
         MoveLine = self.env['account.move.line']
