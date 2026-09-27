@@ -30,14 +30,14 @@
                                 />
                                 <field name="iface_reprint_done_order" />
                             </div>
-                            <div class="row mt16" id="copy_done_order">
+                            <div class="row mt16" id="return_done_order">
                                 <label
                                     for="iface_return_done_order"
                                     class="col-lg-3 o_light_label"
                                 />
                                 <field name="iface_return_done_order" />
                             </div>
-                            <div class="row mt16" id="return_done_order">
+                            <div class="row mt16" id="copy_done_order">
                                 <label
                                     for="iface_copy_done_order"
                                     class="col-lg-3 o_light_label"

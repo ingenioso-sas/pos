@@ -756,7 +756,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
         click_paymentmethods: function (id) {
             var order = this.pos.get_order();
-            if (order.returned_order_id && order.original_payments && !this.pos.config.disable_return_payment_method_restriction) {
+            if (order.returned_order_id && order.original_payments && order.original_payments.length && !this.pos.config.disable_return_payment_method_restriction) {
                 var is_allowed = _.find(order.original_payments, function (p) {
                     return p.payment_method_id === id;
                 });
@@ -824,7 +824,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     return false;
                 }
             }
-            if (order.returned_order_id && order.original_payments && !this.pos.config.disable_return_payment_method_restriction) {
+            if (order.returned_order_id && order.original_payments && order.original_payments.length && !this.pos.config.disable_return_payment_method_restriction) {
                 var paymentlines = order.get_paymentlines();
                 var amounts_by_method = {};
                 for (var i = 0; i < paymentlines.length; i++) {
@@ -852,8 +852,21 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                         continue;
                     }
                     var original_amount = original_by_method[mid];
+                    if (original_amount === undefined) {
+                        var not_allowed_method = this.pos.payment_methods_by_id[mid];
+                        var not_allowed_name = not_allowed_method ? not_allowed_method.name : mid;
+                        this.gui.show_popup("error", {
+                            title: _t("Payment Method Not Allowed"),
+                            body: _.str.sprintf(
+                                _t(
+                                    "You can only use payment methods used in the original order (%s is not allowed), unless they are exempted in the POS config."
+                                ),
+                                not_allowed_name
+                            ),
+                        });
+                        return false;
+                    }
                     if (
-                        original_amount !== undefined &&
                         Math.abs(amounts_by_method[mid]) >
                             Math.abs(original_amount) + 0.0001
                     ) {
