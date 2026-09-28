@@ -779,6 +779,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
 
             // An order must be either a sale or a return, never both, and a
             // return order must only contain returned (negative) lines.
+            // Skipped when the config allows mixing returns and sales.
             var has_positive = false;
             var has_negative = false;
             for (var i = 0; i < orderlines.length; i++) {
@@ -789,26 +790,28 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     has_negative = true;
                 }
             }
-            if (has_positive && has_negative) {
-                this.gui.show_popup("error", {
-                    title: _t("Mixed order not allowed"),
-                    body: _t(
-                        "A POS order cannot combine sales and returns. " +
-                        "Please process the return and the sale in separate orders."
-                    ),
-                });
-                return false;
-            }
-            if (order.returned_order_id && has_positive && !has_negative) {
-                this.gui.show_popup("error", {
-                    title: _t("No sales on return orders"),
-                    body: _t(
-                        "A return order can only contain returned products " +
-                        "(negative quantities). To sell products, create a " +
-                        "new order instead."
-                    ),
-                });
-                return false;
+            if (!this.pos.config.disable_mixed_return_sale_restriction) {
+                if (has_positive && has_negative) {
+                    this.gui.show_popup("error", {
+                        title: _t("Mixed order not allowed"),
+                        body: _t(
+                            "A POS order cannot combine sales and returns. " +
+                            "Please process the return and the sale in separate orders."
+                        ),
+                    });
+                    return false;
+                }
+                if (order.returned_order_id && has_positive && !has_negative) {
+                    this.gui.show_popup("error", {
+                        title: _t("No sales on return orders"),
+                        body: _t(
+                            "A return order can only contain returned products " +
+                            "(negative quantities). To sell products, create a " +
+                            "new order instead."
+                        ),
+                    });
+                    return false;
+                }
             }
 
             for (var j = 0; j < orderlines.length; j++) {

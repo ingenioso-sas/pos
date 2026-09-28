@@ -18,8 +18,12 @@ odoo.define("pos_order_mgmt.models", function(require) {
         add_product: function(product, _options) {
             // A return order must only contain returned products. Block any
             // attempt to add a sale product to it, regardless of the electronic
-            // invoicing configuration.
-            if (this.returned_order_id) {
+            // invoicing configuration. Skipped when the config allows mixing
+            // returns and sales.
+            if (
+                this.returned_order_id &&
+                !this.pos.config.disable_mixed_return_sale_restriction
+            ) {
                 this.pos.gui.show_popup("error", {
                     title: _t("No sales on return orders"),
                     body: _t(
@@ -68,7 +72,13 @@ odoo.define("pos_order_mgmt.models", function(require) {
         set_quantity: function(quantity, _keep_price) {
             // A return order can only refund products, so its lines must stay
             // negative. Prevent flipping a return line to a positive quantity.
-            if (this.order && this.order.returned_order_id && quantity > 0) {
+            // Skipped when the config allows mixing returns and sales.
+            if (
+                this.order &&
+                this.order.returned_order_id &&
+                !this.pos.config.disable_mixed_return_sale_restriction &&
+                quantity > 0
+            ) {
                 this.pos.gui.show_popup("error", {
                     title: _t("No sales on return orders"),
                     body: _t(
