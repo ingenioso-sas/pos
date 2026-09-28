@@ -49,6 +49,14 @@ class PosConfig(models.Model):
         help="If checked, any payment method can be used for returns.",
     )
 
+    disable_mixed_return_sale_restriction = fields.Boolean(
+        string="Allow Mixed Returns and Sales",
+        help="If checked, a return order may combine returned (negative) "
+        "and sale (positive) lines in the same order, as in the original "
+        "system.",
+        default=False,
+    )
+
     return_bypass_payment_method_ids = fields.Many2many(
         comodel_name="pos.payment.method",
         relation="pos_config_return_bypass_payment_method_rel",

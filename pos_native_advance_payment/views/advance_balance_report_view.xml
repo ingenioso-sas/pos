@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="advance_balance_report_form" model="ir.ui.view">
+        <field name="name">advance.balance.report.form</field>
+        <field name="model">advance.balance.report</field>
+        <field name="arch" type="xml">
+            <form string="Reporte de Cartera - Saldos a Favor">
+                <group>
+                    <field name="company_id" options="{'no_create': True}"/>
+                    <field name="advance_account_id"/>
+                    <field name="partner_ids" widget="many2many_tags"/>
+                    <field name="include_zero"/>
+                </group>
+                <group>
+                    <field name="line_ids" nolabel="1">
+                        <tree editable="bottom">
+                            <field name="partner_id"/>
+                            <field name="balance" sum="Total"/>
+                            <field name="days_oldest"/>
+                            <field name="aging_range"/>
+                            <field name="oldest_date"/>
+                            <field name="latest_date"/>
+                        </tree>
+                    </field>
+                </group>
+                <footer>
+                    <button name="action_generate" string="Generar" type="object" class="btn-primary"/>
+                    <button name="action_print_pdf" string="Imprimir PDF" type="object" class="btn-secondary"/>
+                    <button string="Cerrar" class="btn-default" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="advance_balance_report_action" model="ir.actions.act_window">
+        <field name="name">Reporte de Cartera (Saldos a Favor)</field>
+        <field name="res_model">advance.balance.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="menu_advance_balance_report" model="ir.ui.menu">
+        <field name="name">Cartera - Saldos a Favor</field>
+        <field name="parent_id" ref="account.menu_finance_receivables"/>
+        <field name="action" ref="advance_balance_report_action"/>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- Report PDF -->
+    <record id="action_report_advance_balance" model="ir.actions.report">
+        <field name="name">Cartera Saldos a Favor</field>
+        <field name="model">advance.balance.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">pos_native_advance_payment.report_advance_balance</field>
+        <field name="report_file">pos_native_advance_payment.report_advance_balance</field>
+        <field name="binding_model_id" ref="model_advance_balance_report"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Cartera_Saldos_a_Favor_%s' % (object.id)</field>
+    </record>
+
+    <template id="report_advance_balance">
+        <t t-foreach="doc.line_ids" t-as="line">
+            <tr>
+                <td><span t-field="line.partner_id.name"/></td>
+                <td><span t-field="line.balance"/></td>
+                <td><span t-field="line.aging_range"/></td>
+                <td><span t-field="line.oldest_date"/></td>
+                <td><span t-field="line.latest_date"/></td>
+            </tr>
+        </t>
+    </template>
+
+    <template id="report_advance_balance_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.internal_layout">
+                    <div class="page">
+                        <h2>Reporte de Cartera - Saldos a Favor</h2>
+                        <p>Compañía: <span t-field="doc.company_id.name"/></p>
+                        <p>Cuenta de Anticipos: <span t-field="doc.advance_account_id.name"/></p>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Saldo a Favor</th>
+                                    <th>Antigüedad</th>
+                                    <th>Mov. más antiguo</th>
+                                    <th>Último movimiento</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="doc.line_ids" t-as="line">
+                                    <tr>
+                                        <td><span t-field="line.partner_id.name"/></td>
+                                        <td class="text-right"><span t-field="line.balance"/></td>
+                                        <td><span t-field="line.aging_range"/></td>
+                                        <td><span t-field="line.oldest_date"/></td>
+                                        <td><span t-field="line.latest_date"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td class="text-right">
+                                        <strong t-esc="sum(doc.line_ids.mapped('balance'))"/>
+                                    </td>
+                                    <td colspan="3"/>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -29,7 +29,9 @@
                                 >
                                     <table class="client-list">
                                         <thead>
+                                            <th name="th_ol_details" />
                                             <th name="th_ol_ref">Ref.</th>
+                                            <th name="th_ol_name">Nombre</th>
                                             <th name="th_ol_customer">Customer</th>
                                             <th name="th_ol_date">Date</th>
                                             <th name="th_ol_amount_total">Amount</th>
@@ -62,8 +64,21 @@
     </t>
     <t t-name="OrderLine">
         <tr class='order-line' t-att-data-id='order.id' t-att-data-Uid='order.uid' t-att-data-order-id="order.id">
+            <td name="td_ol_details">
+                <span
+                    class="button order-list-toggle-details"
+                    t-att-data-order-id="order.id"
+                    t-att-data-Uid='order.uid'
+                    title="Show / hide order details"
+                >
+                    <i class='fa fa-fw fa-chevron-right' />
+                </span>
+            </td>
             <td name="td_ol_name">
                 <t t-esc='order.pos_reference or order.name' />
+            </td>
+            <td name="td_ol_backend_name">
+                <t t-esc='order.name' />
             </td>
             <td name="td_ol_customer">
                 <t t-esc='order.partner_id[1]' />
@@ -113,7 +128,7 @@
             </td>
         </tr>
         <tr class='order-line-details o_hidden' t-att-data-id='order.id'>
-            <td colspan="5">
+            <td colspan="7">
                 <div class="order-details-container">
                     <!-- Products will be loaded here -->
                 </div>
@@ -128,6 +143,7 @@
                     <th>Product</th>
                     <th>Qty</th>
                     <th>Price</th>
+                    <th>Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -136,6 +152,7 @@
                         <td><t t-esc="line.product_name"/></td>
                         <td><t t-esc="line.qty"/></td>
                         <td><t t-esc="widget.format_currency(line.price_unit)"/></td>
+                        <td><t t-esc="widget.format_currency(line.price_total)"/></td>
                     </tr>
                 </t>
             </tbody>
