@@ -10,9 +10,14 @@
     # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     "category": "Point of Sale",
-    "version": "13.0.1.1.0",
+    "version": "13.0.1.6.0",
+    "license": "AGPL-3",
+    "installable": True,
+    "application": False,
+    "auto_install": False,
     # any module necessary for this one to work correctly
     "depends": ["account", "point_of_sale"],
+    "post_init_hook": "post_init_hook",
     # always loaded
     "data": ["views/views.xml", "views/assets.xml",],
     "qweb": ["static/src/xml/pos.xml"],

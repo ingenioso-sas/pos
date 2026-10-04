@@ -11,17 +11,19 @@ odoo.define("pos_partner.screens", function(require) {
         line_select: function(event, $line, id) {
             try {
                 var partner = this.pos.db.get_partner_by_id(id);
-                const datebirt = new Date(partner.fecha_nac);
-                const datenow = new Date();
-                // Verificar si es el cumpleaños
-                if (
-                    datebirt.getUTCDate() === datenow.getUTCDate() &&
-                    datebirt.getUTCMonth() === datenow.getUTCMonth()
-                ) {
-                    this.confetti_start();
+                if (partner && partner.fecha_nac) {
+                    const datebirt = new Date(partner.fecha_nac);
+                    const datenow = new Date();
+                    // Verificar si es el cumpleaños
+                    if (
+                        datebirt.getUTCDate() === datenow.getUTCDate() &&
+                        datebirt.getUTCMonth() === datenow.getUTCMonth()
+                    ) {
+                        this.confetti_start();
+                    }
                 }
             } catch (err) {
-                console.log(err);
+                console.warn("[pos_partner] birthday check failed:", err);
             }
             return this._super(event, $line, id);
         },
@@ -30,8 +32,6 @@ odoo.define("pos_partner.screens", function(require) {
             if (!this.confetti) {
                 this.confetti_init();
             }
-            console.log("self.confetti");
-            console.log(this.confetti);
 
             this.confetti.start();
             setTimeout(function() {
