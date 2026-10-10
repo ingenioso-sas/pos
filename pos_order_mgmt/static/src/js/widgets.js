@@ -190,7 +190,8 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                 }
             });
 
-            this.$el.off('click', '.order-line').on('click', '.order-line', function (event) {
+            this.$el.off('click', '.order-list-toggle-details').on('click', '.order-list-toggle-details', function (event) {
+                event.stopPropagation();
                 self.click_order_line(event);
             });
 
@@ -199,7 +200,8 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
 
         click_order_line: function (event) {
             var self = this;
-            var $line = $(event.currentTarget);
+            var $button = $(event.currentTarget);
+            var $line = $button.closest('.order-line');
             var order_id = parseInt($line.data('order-id'), 10);
             var $details = $line.next('.order-line-details');
 
@@ -207,9 +209,11 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                 // Hide all other details
                 this.$('.order-line-details').addClass('o_hidden');
                 this.$('.order-line').removeClass('highlight');
+                this.$('.order-list-toggle-details i').removeClass('fa-chevron-down').addClass('fa-chevron-right');
 
                 $details.removeClass('o_hidden');
                 $line.addClass('highlight');
+                $button.find('i').removeClass('fa-chevron-right').addClass('fa-chevron-down');
 
                 // Load details if not loaded
                 var $container = $details.find('.order-details-container');
@@ -217,6 +221,13 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     $container.html('<div class="loader"><i class="fa fa-spinner fa-spin" /> Loading...</div>');
                     this.load_order_data(order_id).then(function (order_data) {
                         if (!order_data) {
+                            // The load failed (the error popup was already shown
+                            // by load_order_data): remove the loading overlay and
+                            // collapse the row so the screen does not stay frozen.
+                            $container.empty();
+                            $details.addClass('o_hidden');
+                            $line.removeClass('highlight');
+                            $button.find('i').removeClass('fa-chevron-down').addClass('fa-chevron-right');
                             return;
                         }
                         var details_html = QWeb.render('OrderDetails', {
@@ -229,6 +240,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
             } else {
                 $details.addClass('o_hidden');
                 $line.removeClass('highlight');
+                $button.find('i').removeClass('fa-chevron-down').addClass('fa-chevron-right');
             }
         },
 
@@ -744,7 +756,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
         },
         click_paymentmethods: function (id) {
             var order = this.pos.get_order();
-            if (order.returned_order_id && order.original_payments && !this.pos.config.disable_return_payment_method_restriction) {
+            if (order.returned_order_id && order.original_payments && order.original_payments.length && !this.pos.config.disable_return_payment_method_restriction) {
                 var is_allowed = _.find(order.original_payments, function (p) {
                     return p.payment_method_id === id;
                 });
@@ -767,6 +779,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
 
             // An order must be either a sale or a return, never both, and a
             // return order must only contain returned (negative) lines.
+            // Skipped when the config allows mixing returns and sales.
             var has_positive = false;
             var has_negative = false;
             for (var i = 0; i < orderlines.length; i++) {
@@ -777,26 +790,28 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     has_negative = true;
                 }
             }
-            if (has_positive && has_negative) {
-                this.gui.show_popup("error", {
-                    title: _t("Mixed order not allowed"),
-                    body: _t(
-                        "A POS order cannot combine sales and returns. " +
-                        "Please process the return and the sale in separate orders."
-                    ),
-                });
-                return false;
-            }
-            if (order.returned_order_id && has_positive && !has_negative) {
-                this.gui.show_popup("error", {
-                    title: _t("No sales on return orders"),
-                    body: _t(
-                        "A return order can only contain returned products " +
-                        "(negative quantities). To sell products, create a " +
-                        "new order instead."
-                    ),
-                });
-                return false;
+            if (!this.pos.config.disable_mixed_return_sale_restriction) {
+                if (has_positive && has_negative) {
+                    this.gui.show_popup("error", {
+                        title: _t("Mixed order not allowed"),
+                        body: _t(
+                            "A POS order cannot combine sales and returns. " +
+                            "Please process the return and the sale in separate orders."
+                        ),
+                    });
+                    return false;
+                }
+                if (order.returned_order_id && has_positive && !has_negative) {
+                    this.gui.show_popup("error", {
+                        title: _t("No sales on return orders"),
+                        body: _t(
+                            "A return order can only contain returned products " +
+                            "(negative quantities). To sell products, create a " +
+                            "new order instead."
+                        ),
+                    });
+                    return false;
+                }
             }
 
             for (var j = 0; j < orderlines.length; j++) {
@@ -812,7 +827,7 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                     return false;
                 }
             }
-            if (order.returned_order_id && order.original_payments && !this.pos.config.disable_return_payment_method_restriction) {
+            if (order.returned_order_id && order.original_payments && order.original_payments.length && !this.pos.config.disable_return_payment_method_restriction) {
                 var paymentlines = order.get_paymentlines();
                 var amounts_by_method = {};
                 for (var i = 0; i < paymentlines.length; i++) {
@@ -840,8 +855,21 @@ odoo.define("pos_order_mgmt.widgets", function (require) {
                         continue;
                     }
                     var original_amount = original_by_method[mid];
+                    if (original_amount === undefined) {
+                        var not_allowed_method = this.pos.payment_methods_by_id[mid];
+                        var not_allowed_name = not_allowed_method ? not_allowed_method.name : mid;
+                        this.gui.show_popup("error", {
+                            title: _t("Payment Method Not Allowed"),
+                            body: _.str.sprintf(
+                                _t(
+                                    "You can only use payment methods used in the original order (%s is not allowed), unless they are exempted in the POS config."
+                                ),
+                                not_allowed_name
+                            ),
+                        });
+                        return false;
+                    }
                     if (
-                        original_amount !== undefined &&
                         Math.abs(amounts_by_method[mid]) >
                             Math.abs(original_amount) + 0.0001
                     ) {

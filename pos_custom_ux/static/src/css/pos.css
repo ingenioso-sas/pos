@@ -1,4 +1,9 @@
-
-.pos .category-list-scroller{
-    max-height:20vh !important;
+/* Copyright (C) 2024 - Today: Odoo Community Association (OCA)
+ * License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
+ *
+ * Limit the POS category list height so the product list
+ * keeps enough visible space on screens with many categories.
+ */
+.pos .category-list-scroller {
+    max-height: 20vh !important;
 }

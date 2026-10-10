@@ -30,14 +30,14 @@
                                 />
                                 <field name="iface_reprint_done_order" />
                             </div>
-                            <div class="row mt16" id="copy_done_order">
+                            <div class="row mt16" id="return_done_order">
                                 <label
                                     for="iface_return_done_order"
                                     class="col-lg-3 o_light_label"
                                 />
                                 <field name="iface_return_done_order" />
                             </div>
-                            <div class="row mt16" id="return_done_order">
+                            <div class="row mt16" id="copy_done_order">
                                 <label
                                     for="iface_copy_done_order"
                                     class="col-lg-3 o_light_label"
@@ -64,6 +64,13 @@
                                     class="col-lg-4 o_light_label"
                                 />
                                 <field name="return_bypass_payment_method_ids" widget="many2many_tags" />
+                            </div>
+                            <div class="row mt16" id="disable_mixed_return_sale_restriction" attrs="{'invisible': [('iface_return_done_order', '=', False)]}">
+                                <label
+                                    for="disable_mixed_return_sale_restriction"
+                                    class="col-lg-4 o_light_label"
+                                />
+                                <field name="disable_mixed_return_sale_restriction" />
                             </div>
                             <div class="row mt16" id="pending_order_modification_confirmation">
                                 <label

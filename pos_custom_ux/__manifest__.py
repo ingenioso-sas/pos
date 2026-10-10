@@ -1,34 +1,28 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2024 - Today: Odoo Community Association (OCA)
+# License AGPL-3.0 or later (http://www.gnu.org/licenses/agpl.html).
 {
-    'name': "pos_custom_ux",
+    "name": "Point of Sale - Custom UX",
+    "version": "13.0.1.0.1",
+    "category": "Point Of Sale",
+    "summary": "Limit category list height in POS frontend for better UX",
+    "description": """
+Point of Sale - Custom UX
+=========================
 
-    'summary': """
-        Short (1 phrase/line) summary of the module's purpose, used as
-        subtitle on modules listing or apps.openerp.com""",
+This module improves the Point of Sale frontend layout by limiting
+the height of the category list scroller (``.category-list-scroller``)
+to 20% of the viewport height (``20vh``).
 
-    'description': """
-        Long description of module's purpose
+Without this, the category bar can take too much vertical space on
+screens with many categories, pushing the product list down and forcing
+extra scrolling.
+
+No new models, views or configuration are added. Only a CSS asset is
+injected into ``point_of_sale.assets``.
     """,
-
-    'author': "My Company",
-    'website': "http://www.yourcompany.com",
-
-    # Categories can be used to filter modules in modules listing
-    # Check https://github.com/odoo/odoo/blob/13.0/odoo/addons/base/data/ir_module_category_data.xml
-    # for the full list
-    'category': 'Uncategorized',
-    'version': '0.1',
-
-    # any module necessary for this one to work correctly
-    'depends': ['base'],
-
-    # always loaded
-    'data': [
-        # 'security/ir.model.access.csv',
-        'views/assets.xml'
-    ],
-    # only loaded in demonstration mode
-    'demo': [
-        'demo/demo.xml',
-    ],
+    "author": "Odoo Community Association (OCA)",
+    "website": "https://github.com/OCA/pos",
+    "license": "AGPL-3",
+    "depends": ["point_of_sale"],
+    "data": ["views/assets.xml"],
 }

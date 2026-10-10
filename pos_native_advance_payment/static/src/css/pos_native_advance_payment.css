@@ -1,0 +1,50 @@
+.advance-payment-method .payment-button {
+    border: 2px solid #28a745;
+    background: #e8f5e9;
+}
+.advance-payment-method .payment-button:hover {
+    background: #c8e6c9;
+}
+/* v13: los métodos son div.button.paymentmethod */
+.paymentmethods .paymentmethod.advance-payment-method {
+    border: 2px solid #28a745;
+    background: #e8f5e9;
+}
+.paymentmethods .paymentmethod.advance-payment-method:hover {
+    background: #c8e6c9;
+}
+.advance-method-avail {
+    display: block;
+    font-size: 11px;
+    line-height: 1.2;
+    margin-top: 2px;
+    font-weight: bold;
+    color: #1e7e34;
+    white-space: nowrap;
+}
+.paymentmethods .paymentmethod.advance-exceeded {
+    border: 2px solid #dc3545;
+    background: #f8d7da;
+}
+.paymentmethods .paymentmethod.advance-exceeded .advance-method-avail {
+    color: #721c24;
+}
+.advance-balance-info .detail {
+    padding: 8px 15px;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+}
+.advance-balance-info .label {
+    font-weight: 500;
+}
+.advance-balance-info .adv-avail-val,
+.advance-balance-info .adv-remaining-val {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.advance-balance-info .adv-balance-val,
+.advance-balance-info .adv-used-val {
+    font-weight: bold;
+}

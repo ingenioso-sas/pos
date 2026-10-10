@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pay_advance_wizard_form" model="ir.ui.view">
+        <field name="name">pay.advance.wizard.form</field>
+        <field name="model">pay.advance.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pagar Facturas con Saldo a Favor">
+                <group>
+                    <field name="partner_id" required="1"/>
+                    <field name="advance_balance" readonly="1"/>
+                    <field name="total_selected" readonly="1"/>
+                </group>
+                <separator string="Pagos sin conciliar (Saldo a Favor)"/>
+                <field name="payment_ids" nolabel="1" readonly="1">
+                    <tree>
+                        <field name="name" readonly="1"/>
+                        <field name="payment_date" readonly="1"/>
+                        <field name="amount" readonly="1"/>
+                        <field name="state" readonly="1"/>
+                    </tree>
+                </field>
+                <separator string="Notas crédito sin conciliar (Devoluciones)"/>
+                <field name="credit_note_ids" nolabel="1" readonly="1">
+                    <tree>
+                        <field name="name" readonly="1"/>
+                        <field name="invoice_date" readonly="1"/>
+                        <field name="amount_residual" readonly="1"/>
+                        <field name="state" readonly="1"/>
+                    </tree>
+                </field>
+                <separator string="Facturas Pendientes"/>
+                <field name="invoice_ids" nolabel="1">
+                    <tree editable="bottom" multi_edit="1">
+                        <field name="name" readonly="1"/>
+                        <field name="partner_id" readonly="1"/>
+                        <field name="invoice_date" readonly="1"/>
+                        <field name="amount_total_signed" readonly="1" sum="Total"/>
+                        <field name="state" readonly="1"/>
+                    </tree>
+                </field>
+                <footer>
+                    <button name="action_pay" string="Pagar con Saldo a Favor" type="object"
+                            class="btn-primary" attrs="{'invisible': [('advance_balance', '&lt;=', 0)]}"/>
+                    <button string="Cancelar" class="btn-default" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="pay_advance_wizard_action" model="ir.actions.act_window">
+        <field name="name">Pagar Facturas con Saldo a Favor</field>
+        <field name="res_model">pay.advance.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_pay_advance_wizard"
+              name="Pagar con Saldo a Favor"
+              parent="account.menu_finance_receivables"
+              action="pay_advance_wizard_action"
+              sequence="55"/>
+</odoo>
