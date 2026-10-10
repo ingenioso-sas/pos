@@ -140,13 +140,32 @@ class PosOrder(models.Model):
         return super().create_from_ui(orders, *args, **kwargs)
 
     @api.model
+    def _is_mixed_return_sale_allowed(self, pos_session_id):
+        """Check if the session config allows mixing returns and sales.
+
+        Defaults to False (restriction active) when the session or config
+        cannot be determined, to preserve the current safe behavior.
+        """
+        if not pos_session_id:
+            return False
+        session = self.env["pos.session"].browse(pos_session_id)
+        if not session.exists():
+            return False
+        return bool(session.config_id.disable_mixed_return_sale_restriction)
+
+    @api.model
     def _check_no_mixed_sign_lines(self, order):
         """A POS order must be either a sale or a return, never both.
 
         Reject orders that mix positive (sale) and negative (return) line
         quantities, and reject return orders that only contain positive lines
         (a return order must only refund products).
+
+        Skipped when the session config allows mixed returns and sales.
         """
+        pos_session_id = order.get("data", {}).get("pos_session_id")
+        if self._is_mixed_return_sale_allowed(pos_session_id):
+            return
         lines_data = order.get("data", {}).get("lines", [])
         if not lines_data:
             return
@@ -259,6 +278,7 @@ class PosOrder(models.Model):
             "qty": order_line.qty,
             "price_unit": order_line.price_unit,
             "discount": order_line.discount,
+            "price_total": order_line.price_subtotal_incl,
             "pack_lot_names": order_line.pack_lot_ids.mapped("lot_name"),
         }
 

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.pos.advance</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@data-key='point_of_sale']" position="inside">
+                <h2>Anticipos y Saldos a Favor</h2>
+                <div class="row mt16 o_settings_container">
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">Cuenta de Anticipos (Saldos a Favor)</span>
+                            <div class="text-muted">
+                                Cuenta contable para rastrear los saldos a favor de los clientes.
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="pos_advance_account_id" class="o_light_label"/>
+                                </div>
+                            </div>
+                            <div class="text-muted">
+                                <i class="fa fa-info-circle"/> Debe ser una cuenta de <b>pasivo</b>:
+                                los anticipos recibidos son dinero que la empresa le debe al cliente.
+                                En el PUC colombiano usa <b>2805 - Anticipos de Clientes</b>.
+                                Requiere <b>Conciliar activado</b> y tipo interno
+                                <b>Pagado / Cuenta por pagar</b>. Actúa como cuenta
+                                <b>clearing</b>: el TPV acredita aquí y el pago la debita
+                                hacia CxC (sin duplicar caja).
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">Producto Auxiliar de Depósito (TPV)</span>
+                            <div class="text-muted">
+                                Servicio sin impuestos ni stock. Su cuenta de ingreso se
+                                sincroniza con la cuenta de anticipos. Hace que el depósito
+                                cuadre en caja como una venta normal.
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="pos_deposit_product_id" class="o_light_label"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">Diario Clearing de Anticipos</span>
+                            <div class="text-muted">
+                                Diario <b>banco</b> (no efectivo) con débito/crédito por
+                                defecto = cuenta de anticipos. El account.payment del
+                                depósito asienta Dr Anticipos / Cr CxC sin tocar caja.
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="pos_advance_journal_id" class="o_light_label"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane"/>
+                        <div class="o_setting_right_pane">
+                            <span class="o_form_label">Límite de Sobregiro por Defecto</span>
+                            <div class="text-muted">
+                                Límite de sobregiro predeterminado para todos los clientes.
+                                Se puede ajustar por cliente.
+                            </div>
+                            <div class="content-group">
+                                <div class="mt16">
+                                    <field name="advance_overdraft_limit" class="o_light_label"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

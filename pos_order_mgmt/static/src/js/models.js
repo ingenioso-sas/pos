@@ -18,8 +18,12 @@ odoo.define("pos_order_mgmt.models", function(require) {
         add_product: function(product, _options) {
             // A return order must only contain returned products. Block any
             // attempt to add a sale product to it, regardless of the electronic
-            // invoicing configuration.
-            if (this.returned_order_id) {
+            // invoicing configuration. Skipped when the config allows mixing
+            // returns and sales.
+            if (
+                this.returned_order_id &&
+                !this.pos.config.disable_mixed_return_sale_restriction
+            ) {
                 this.pos.gui.show_popup("error", {
                     title: _t("No sales on return orders"),
                     body: _t(
@@ -68,7 +72,13 @@ odoo.define("pos_order_mgmt.models", function(require) {
         set_quantity: function(quantity, _keep_price) {
             // A return order can only refund products, so its lines must stay
             // negative. Prevent flipping a return line to a positive quantity.
-            if (this.order && this.order.returned_order_id && quantity > 0) {
+            // Skipped when the config allows mixing returns and sales.
+            if (
+                this.order &&
+                this.order.returned_order_id &&
+                !this.pos.config.disable_mixed_return_sale_restriction &&
+                quantity > 0
+            ) {
                 this.pos.gui.show_popup("error", {
                     title: _t("No sales on return orders"),
                     body: _t(
@@ -79,6 +89,62 @@ odoo.define("pos_order_mgmt.models", function(require) {
                 return;
             }
             return orderline_super.set_quantity.apply(this, arguments);
+        },
+    });
+
+    // Deshabilita solo la impresión del PDF de factura en la validación.
+    // La facturación contable se mantiene: se envía con to_invoice=true,
+    // el backend crea el account.move con normalidad.
+    models.PosModel = models.PosModel.extend({
+        push_and_invoice_order: function(order) {
+            var self = this;
+            var invoiced = new Promise(function(
+                resolveInvoiced,
+                rejectInvoiced
+            ) {
+                if (!order.get_client()) {
+                    rejectInvoiced({
+                        code: 400,
+                        message: "Missing Customer",
+                        data: {},
+                    });
+                } else {
+                    var order_id = self.db.add_order(order.export_as_JSON());
+                    self.flush_mutex.exec(function() {
+                        var done = new Promise(function(
+                            resolveDone,
+                            rejectDone
+                        ) {
+                            var transfer = self._flush_orders(
+                                [self.db.get_order(order_id)],
+                                { timeout: 30000, to_invoice: true }
+                            );
+                            transfer.catch(function(error) {
+                                rejectInvoiced(error);
+                                rejectDone();
+                            });
+                            transfer.then(function(order_server_id) {
+                                if (
+                                    order_server_id &&
+                                    order_server_id.length
+                                ) {
+                                    resolveInvoiced(order_server_id);
+                                    resolveDone();
+                                } else {
+                                    rejectInvoiced({
+                                        code: 401,
+                                        message: "Backend Invoice",
+                                        data: { order: order },
+                                    });
+                                    rejectDone();
+                                }
+                            });
+                        });
+                        return done;
+                    });
+                }
+            });
+            return invoiced;
         },
     });
 });

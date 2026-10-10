@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="DepositAmountPopup">
+        <div role="dialog" class="modal-dialog">
+            <div class="popup popup-text" style="max-width: 400px;">
+                <header class="title"><t t-esc="widget.options.title || 'Depósito'"/></header>
+                <main class="body"><t t-esc="widget.options.body || ''"/></main>
+                <div style="padding: 15px;">
+                    <input type="number" class="deposit-input"
+                           style="width: 100%; padding: 12px; font-size: 20px; text-align: center; border: 2px solid #ccc; border-radius: 5px;"
+                           placeholder="0.00" autofocus="autofocus"/>
+                </div>
+                <footer class="footer">
+                    <div class="button cancel">Cancelar</div>
+                    <div class="button confirm">Depositar</div>
+                </footer>
+            </div>
+        </div>
+    </t>
+
+    <t t-extend="ClientDetails">
+        <t t-jquery=".client-details-right" t-operation="append">
+            <div class="client-detail">
+                <span class="label">Saldo a Favor</span>
+                <span t-attf-style="font-weight: bold; #{partner.pos_advance_balance > 0 ? 'color: #28a745;' : 'color: #dc3545;'}">
+                    <t t-esc='widget.format_currency(partner.pos_advance_balance)'/>
+                </span>
+            </div>
+            <div class="client-detail">
+                <span class="label">Disponible</span>
+                <span t-attf-style="font-weight: bold; #{partner.advance_available > 0 ? 'color: #28a745;' : 'color: #dc3545;'}">
+                    <t t-esc='widget.format_currency(partner.advance_available || 0)'/>
+                </span>
+            </div>
+            <div class="client-detail">
+                <button class="button details-button o_advance_history_btn"
+                        t-att-data-partner-id="partner.id"
+                        style="font-size: 12px; padding: 3px 8px; margin-top: 5px;">
+                    Ver movimientos
+                </button>
+            </div>
+        </t>
+    </t>
+
+    <t t-extend="ClientLine">
+        <t t-jquery="tr.client-line" t-operation="append">
+            <td t-attf-style="font-weight: bold; #{partner.pos_advance_balance > 0 ? 'color: #28a745;' : ''}">
+                <t t-esc='widget.format_currency(partner.pos_advance_balance)'/>
+            </td>
+        </t>
+    </t>
+
+    <t t-extend="ClientListScreenWidget">
+        <t t-jquery="table.client-list thead tr" t-operation="append">
+            <th>Saldo a Favor</th>
+        </t>
+    </t>
+
+    <!-- Favor y crédito dentro de la casilla (compacto, solo con datos) -->
+    <t t-extend="PaymentScreen-Paymentmethods">
+        <t t-jquery=".button.paymentmethod" t-operation="append">
+            <t t-set="adv_info" t-value="widget.advance_method_info(payment_method)"/>
+            <t t-if="adv_info">
+                <span class="advance-method-avail"><t t-esc="adv_info.favor_text"/> · <t t-esc="adv_info.credit_text"/></span>
+            </t>
+        </t>
+    </t>
+
+    <!-- Mostrar saldo en la pantalla de pago -->
+    <t t-extend="PaymentScreen">
+        <t t-jquery=".payment-screen" t-operation="append">
+            <div class="advance-balance-info"
+                 t-if="widget.pos.get_order().get_client()
+                        and widget.pos.get_order().get_client().advance_payment_allowed">
+                <div class="detail adv-row">
+                    <span class="label">Saldo a Favor:</span>
+                    <span class="adv-balance-val"
+                          t-esc="widget.format_currency(widget.pos.get_order().get_client().pos_advance_balance || 0)"/>
+                </div>
+                <div class="detail adv-row">
+                    <span class="label">Crédito en uso:</span>
+                    <span class="adv-used-val"
+                          t-esc="widget.format_currency(widget.pos.get_order().get_client().advance_credit_used || 0)"/>
+                </div>
+                <div class="detail adv-row">
+                    <span class="label">Disponible:</span>
+                    <span class="adv-avail-val"
+                          t-esc="widget.format_currency(widget.pos.get_order().get_client().advance_available || 0)"/>
+                </div>
+                <div class="detail adv-row">
+                    <span class="label">Restante tras este pago:</span>
+                    <span class="adv-remaining-val">—</span>
+                </div>
+            </div>
+        </t>
+    </t>
+
+</templates>

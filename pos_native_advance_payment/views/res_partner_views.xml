@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_advance_inherit" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.advance</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_account_position_id']/.." position="after">
+                <group string="Saldo a Favor (TPV)" name="advance">
+                    <field name="advance_payment_allowed"/>
+                    <field name="advance_overdraft_limit"/>
+                    <field name="pos_advance_balance"/>
+                    <field name="advance_credit_used"/>
+                    <field name="advance_available"/>
+                    <button name="action_pos_advance_history" string="Ver movimientos"
+                            type="object" icon="fa-history"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
