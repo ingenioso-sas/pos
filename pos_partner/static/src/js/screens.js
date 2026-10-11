@@ -8,6 +8,34 @@ odoo.define("pos_partner.screens", function(require) {
     //    var _t = core._t;
 
     screens.ClientListScreenWidget.include({
+        show: function() {
+            this._super();
+            var self = this;
+            var $input = this.$(".searchbox input");
+            // The core binds keypress on every show(): keypress never fires
+            // on delete/backspace, virtual keyboards or paste, so deleting
+            // never re-filters. Drop it (client list only) and rely on input,
+            // which covers typing, deleting, paste and virtual keyboards.
+            // Namespaced bindings + off-first so they never accumulate.
+            $input.off("keypress");
+            $input.off("input.pos_partner");
+            $input.off("keydown.pos_partner");
+            var input_timeout = null;
+            $input.on("input.pos_partner", function() {
+                clearTimeout(input_timeout);
+                var searchbox = this;
+                input_timeout = setTimeout(function() {
+                    self.perform_search(searchbox.value, false);
+                }, 70);
+            });
+            // Preserve the core Enter behavior (single match auto-select).
+            $input.on("keydown.pos_partner", function(event) {
+                if (event.which === 13) {
+                    clearTimeout(input_timeout);
+                    self.perform_search(this.value, true);
+                }
+            });
+        },
         line_select: function(event, $line, id) {
             try {
                 var partner = this.pos.db.get_partner_by_id(id);

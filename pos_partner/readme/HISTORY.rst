@@ -1,3 +1,19 @@
+13.0.1.12.0 (2026-10-11)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* [CHG] Marcador en consola al cargar ``document_type.js`` para diagnosticar
+  despliegues (si falta la línea, el POS sirve assets viejos).
+
+13.0.1.11.0 (2026-10-11)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* [ADD] Búsqueda local de clientes sin regex (``indexOf`` sobre texto normalizado:
+  minúsculas, sin tildes, sin espacios/guiones) en ``db.js``; mismo resultado al
+  escribir y al borrar. ``identificacion`` vuelve a cargarse solo como fallback
+  transicional de búsqueda (I1), sin mostrarse.
+* [CHG] ``screens.js``: el buscador escucha ``input`` (+ Enter) en lugar del
+  ``keypress`` del core, con debounce 70ms y handlers con namespace.
+
 13.0.1.10.0 (2026-10-11)
 ~~~~~~~~~~~~~~~~~~~~~~~
 

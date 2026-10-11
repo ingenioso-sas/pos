@@ -7,6 +7,10 @@ odoo.define("pos_partner.document_type", function(require) {
 
     var _t = core._t;
 
+    // Load marker: if this line is missing from the POS console, the file
+    // was not deployed (module not updated) and nothing below can run.
+    console.info("[pos_partner] document_type.js loaded");
+
     // Document type field provided by l10n_co (NOT a dependency of this
     // module, so everything here is defensive: if the field -- or Jorels,
     // which owns this feature -- is present, this module steps aside).
