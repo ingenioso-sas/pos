@@ -97,20 +97,36 @@ odoo.define("pos_partner.document_type", function(require) {
         return value || "";
     }
 
+    // Native label column is 75px: "Identificación" overflows it and overlaps
+    // the value. The width is set inline (not only via main.scss) so the fix
+    // applies atomically with the rename even if the CSS bundle is stale.
+    var LONG_LABEL_WIDTH = "115px";
     function rename_vat_label($contents) {
         // Only reached when Jorels is absent, so its own Tax ID -> NIT
         // rename can never be clobbered by this one.
         var label = _t("Identification");
+        // Widen the whole label column (not just our row) so every label
+        // stays right-aligned together and every value starts at the same x.
+        // Scoped to forms we renamed: Jorels' short labels keep native width.
+        $contents
+            .find(".client-details-box")
+            .addClass("pos-partner-wide-labels");
+        // "Identificación" overflows the native 75px label column, so the
+        // renamed rows get a marker class widened in main.scss.
         $contents
             .find("input.detail.vat")
             .closest(".client-detail")
+            .addClass("pos-partner-long-label")
             .find("> span.label")
-            .text(label);
+            .text(label)
+            .css("width", LONG_LABEL_WIDTH);
         $contents
             .find("span.detail.vat")
             .closest(".client-detail")
+            .addClass("pos-partner-long-label")
             .find("> span.label")
-            .text(label);
+            .text(label)
+            .css("width", LONG_LABEL_WIDTH);
     }
 
     function inject_edit($contents, partner) {

@@ -5,3 +5,16 @@
     padding: 10px;
     margin-left: 10px;
 }
+
+// The native label column is 75px wide (point_of_sale/.../pos.css), which
+// fits "Tax ID"/"NIT" but not "Identificación". Widening only our row would
+// leave its label and value shifted right versus the other rows (all labels
+// are right-aligned), so the whole column is widened uniformly -- but only in
+// forms renamed by document_type.js (Jorels absent), via .pos-partner-wide-labels.
+.pos
+    .clientlist-screen
+    .client-details-box.pos-partner-wide-labels
+    .client-detail
+    > .label {
+    width: 115px;
+}

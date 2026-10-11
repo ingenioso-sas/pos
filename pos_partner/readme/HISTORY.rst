@@ -1,3 +1,23 @@
+13.0.1.15.0 (2026-10-11)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* [FIX] Columna de etiquetas a 115px en parejo (no solo la fila renombrada),
+  para que etiquetas y valores queden verticalmente alineados. Solo en
+  formularios renombrados por este módulo (sin Jorels).
+
+13.0.1.14.0 (2026-10-11)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* [FIX] El ancho de 115px ahora se aplica inline junto con el rename, para que
+  no dependa de que el bundle SCSS esté regenerado/cacheado.
+
+13.0.1.13.0 (2026-10-11)
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* [FIX] La etiqueta *Identificación* se solapaba con el valor: la columna nativa
+  es de 75px. Las filas renombradas llevan la clase ``pos-partner-long-label``
+  con columna de 115px en ``main.scss``.
+
 13.0.1.12.0 (2026-10-11)
 ~~~~~~~~~~~~~~~~~~~~~~~
 
