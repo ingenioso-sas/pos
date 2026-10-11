@@ -24,9 +24,6 @@ odoo.define("pos_partner_pos.DB", function(require) {
             if (partner.vat) {
                 str += "|" + partner.vat;
             }
-            if (partner.identificacion) {
-                str += "|" + partner.identificacion;
-            }
             str =
                 String(partner.id) +
                 ":" +

@@ -5,6 +5,7 @@
             <script src="/pos_partner/static/src/js/models.js" />
             <script src="/pos_partner/static/src/js/screens.js" />
             <script src="/pos_partner/static/src/js/db.js" />
+            <script src="/pos_partner/static/src/js/document_type.js" />
         </xpath>
         <xpath expr="//link[last()]" position="after">
             <link rel="stylesheet" href="/pos_partner/static/src/scss/main.scss" />

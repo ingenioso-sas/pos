@@ -16,6 +16,13 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: pos_partner
+#. openerp-web
+#: code:addons/pos_partner/static/src/js/document_type.js:0
+#, python-format
+msgid "Document Type"
+msgstr ""
+
+#. module: pos_partner
 #: model:ir.model.fields,field_description:pos_partner.field_res_partner__edad
 #: model:ir.model.fields,field_description:pos_partner.field_res_users__edad
 msgid "Age"
