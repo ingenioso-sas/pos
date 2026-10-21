@@ -420,11 +420,16 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                 } else {
                     small.remove();
                 }
-                var avail_now = Math.max(
-                    (client.advance_available || 0) -
-                    // NOTA: dentro del callback de .each(), this es el DOM
-                    // element; el widget queda en self.
-                    advance_used_for(self.pos, client.id), 0);
+                // Sin cliente no hay saldo que mostrar (procesar/limpiar
+                // la orden deja get_client() en null).
+                var avail_now = 0;
+                if (client) {
+                    avail_now = Math.max(
+                        (client.advance_available || 0) -
+                        // NOTA: dentro del callback de .each(), this es el
+                        // DOM element; el widget queda en self.
+                        advance_used_for(self.pos, client.id), 0);
+                }
                 var exceeded = !!client && (tendered - avail_now > 0.001);
                 $(this).toggleClass('advance-exceeded', exceeded);
                 $(this).toggleClass('advance-payment-method', !exceeded);
