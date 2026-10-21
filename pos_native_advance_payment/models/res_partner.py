@@ -185,8 +185,25 @@ class ResPartner(models.Model):
                 overdraft = partner._get_effective_overdraft()
             except Exception:
                 overdraft = 0.0
-            partner.advance_available = total + overdraft - used
-            partner.advance_credit_remaining = overdraft - used
+            # Alineado con la fórmula del guard del TPV
+            # (pos.order._check_advance_payment_restrictions): lo gastado en
+            # sesiones abiertas NO está en `used` (ese cálculo excluye las
+            # facturas de órdenes en sesión abierta para no doble-contarlo),
+            # pero sí consume el saldo real. Sin este descuento, un refresh
+            # del TPV (que borra el contador local) volvía a mostrar el
+            # saldo completo y el usuario solo veía el rechazo al validar.
+            try:
+                session_used = self.env["pos.order"].\
+                    _get_open_sessions_advance_used(
+                        partner, partner.company_id or self.env.company)
+            except Exception as e:
+                _logger.warning(
+                    'Error calculando uso de saldo en sesión de %s: %s',
+                    partner.display_name, e,
+                )
+                session_used = 0.0
+            partner.advance_available = total + overdraft - used - session_used
+            partner.advance_credit_remaining = overdraft - used - session_used
 
     def action_pos_advance_history(self):
         """Abrir líneas CxC sin conciliar (pagos + notas crédito)."""

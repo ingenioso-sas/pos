@@ -245,6 +245,55 @@ class TestDoubleSpendSameSession(TransactionCase):
             ui_order=self._ui_order(2000.0)
         )
 
+    def test_compute_available_discounts_open_sessions(self):
+        """advance_available del partner debe incluir el cap de sesión.
+
+        Consistencia compute <-> guard: tras un refresh del TPV el contador
+        local desaparece y la UI se refresca vía RPC con estos campos; si no
+        descuentan lo ya gastado en la sesión, la pantalla vuelve a ofrecer
+        el saldo completo (el guard igual bloquea, pero tarde).
+        """
+        self._make_order_with_advance("Test-1", 1500.0)
+        # Caché ORM: los computes sin `depends` pueden quedar stale en la
+        # misma transacción; forzar lectura fresca.
+        self.partner.invalidate_cache()
+        # Lo gastado en la sesión abierta descuenta del disponible...
+        self.assertAlmostEqual(
+            self.partner.advance_available, 500.0)
+        # ...y el guard del TPV debe ver exactamente lo mismo.
+        order2 = self.env["pos.order"].create(
+            {
+                "name": "Test-2",
+                "pos_reference": "Test-2",
+                "session_id": self.session.id,
+                "partner_id": self.partner.id,
+                "amount_total": 600.0,
+                "amount_tax": 0.0,
+                "amount_paid": 0.0,
+                "amount_return": 0.0,
+            }
+        )
+        with self.assertRaises(ValidationError):
+            order2._check_advance_payment_restrictions(
+                ui_order=self._ui_order(600.0)
+            )
+        # 500 exactos sí pasan (sin redondeos de más).
+        order3 = self.env["pos.order"].create(
+            {
+                "name": "Test-3",
+                "pos_reference": "Test-3",
+                "session_id": self.session.id,
+                "partner_id": self.partner.id,
+                "amount_total": 500.0,
+                "amount_tax": 0.0,
+                "amount_paid": 0.0,
+                "amount_return": 0.0,
+            }
+        )
+        order3._check_advance_payment_restrictions(
+            ui_order=self._ui_order(500.0)
+        )
+
     def test_multisession_cap_same_company(self):
         """Lo gastado en otra sesión ABIERTA también descuenta."""
         self._make_order_with_advance("Test-1", 2000.0)
