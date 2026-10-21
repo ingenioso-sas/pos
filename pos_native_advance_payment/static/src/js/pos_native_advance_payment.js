@@ -139,6 +139,19 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
         return state.by_partner[partner_id] || 0;
     }
 
+    // Usado "real" de sesión para la UI: el MAYOR entre el contador local
+    // (memoria del navegador: cubre pendientes de envío y el descuento
+    // instantáneo) y el cap que ya vio el servidor (sobrevive refresh).
+    // max() evita doble descuento: lo ya enviado cuenta en ambos lados;
+    // lo pendiente solo existe en el local.
+    function advance_used_total(pos, client) {
+        if (!client) {
+            return 0;
+        }
+        return Math.max(advance_used_for(pos, client.id),
+                        client.pos_advance_session_used || 0);
+    }
+
     // --- PaymentScreenWidget overrides ---
     screens.PaymentScreenWidget.include({
         init: function (parent, options) {
@@ -179,6 +192,7 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                     'advance_credit_used',
                     'advance_available',
                     'advance_credit_remaining',
+                    'pos_advance_session_used',
                 ]]
             }).then(function (result) {
                 if (result && result.length) {
@@ -200,6 +214,9 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                     }
                     if (result[0].advance_credit_remaining !== undefined) {
                         client.advance_credit_remaining = result[0].advance_credit_remaining;
+                    }
+                    if (result[0].pos_advance_session_used !== undefined) {
+                        client.pos_advance_session_used = result[0].pos_advance_session_used;
                     }
                     self._refresh_advance_display();
                 }
@@ -254,10 +271,10 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             } else {
                 base = client.pos_advance_balance || 0;
             }
-            // Menos lo ya gastado en esta sesión (los campos en caché no
-            // bajan hasta el cierre).
+            // Menos lo ya gastado en esta sesión (máx. contador local o
+            // servidor: los campos en caché no bajan solos).
             return Math.max(
-                base - advance_used_for(this.pos, client.id), 0);
+                base - advance_used_total(this.pos, client), 0);
         },
         // Alerta única por pedido: ofrece usar el saldo disponible.
         // Se dispara con datos frescos (RPC) o en caché al abrir el pago.
@@ -343,7 +360,7 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             }
             var favor = Math.max(
                 (client.pos_advance_balance || 0) -
-                advance_used_for(this.pos, client.id), 0);
+                advance_used_total(this.pos, client), 0);
             var remaining_credit = client.advance_credit_remaining;
             if (remaining_credit === undefined) {
                 return null;
@@ -388,9 +405,13 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             var client = order ? order.get_client() : false;
             var box = this.$('.advance-balance-info');
             if (box.length && client && client.advance_payment_allowed) {
+                // advance_available ya descuenta la sesión vista por el
+                // servidor; se re-suma ese cap para restar used_total (máx.
+                // servidor/local) y no doble-descontar lo ya enviado.
                 var avail = Math.max(
-                    (client.advance_available || 0) -
-                    advance_used_for(this.pos, client.id), 0);
+                    (client.advance_available || 0) +
+                    (client.pos_advance_session_used || 0) -
+                    advance_used_total(this.pos, client), 0);
                 var remaining = avail - this._advance_tendered();
                 box.find('.adv-avail-val').text(this.format_currency(avail));
                 box.find('.adv-avail-val').css(
@@ -425,10 +446,11 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                 var avail_now = 0;
                 if (client) {
                     avail_now = Math.max(
-                        (client.advance_available || 0) -
+                        (client.advance_available || 0) +
+                        (client.pos_advance_session_used || 0) -
                         // NOTA: dentro del callback de .each(), this es el
                         // DOM element; el widget queda en self.
-                        advance_used_for(self.pos, client.id), 0);
+                        advance_used_total(self.pos, client), 0);
                 }
                 var exceeded = !!client && (tendered - avail_now > 0.001);
                 $(this).toggleClass('advance-exceeded', exceeded);
@@ -484,11 +506,13 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             if (client.advance_available === undefined) {
                 return true; // Sin datos frescos: decide el backend.
             }
-            // Disponible real menos lo ya gastado en esta sesión (los campos
-            // del partner no bajan hasta el cierre, pero la venta ya gastó).
+            // Disponible real sin doble descuento: el compute del servidor
+            // ya incluye lo enviado en sesión; el contador local cubre lo
+            // pendiente de envío.
             var avail_now = Math.max(
-                client.advance_available -
-                advance_used_for(this.pos, client.id), 0);
+                (client.advance_available || 0) +
+                (client.pos_advance_session_used || 0) -
+                advance_used_total(this.pos, client), 0);
             if (tendered - avail_now > 0.001) {
                 this.gui.show_popup('error', {
                     'title': _t('Saldo a Favor Insuficiente'),
@@ -655,6 +679,14 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                 order._advance_balance_bound = true;
                 order.bind('change:client', this._on_advance_client_change, this);
             }
+            // Sin caché del socio (p. ej. recién refrescado el TPV): pedir
+            // datos al servidor; sin esto el panel se quedaba oculto o con
+            // valores viejos hasta que se cambiara el cliente a mano.
+            var client = order ? order.get_client() : false;
+            if (client && client.pos_advance_balance === undefined &&
+                    client.advance_available === undefined) {
+                this._on_advance_client_change();
+            }
         },
         _on_advance_client_change: function () {
             var self = this;
@@ -670,6 +702,9 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                 args: [[client.id], [
                     'pos_advance_balance',
                     'advance_payment_allowed',
+                    'advance_available',
+                    'advance_credit_used',
+                    'pos_advance_session_used',
                 ]],
             }).then(function (result) {
                 if (result && result.length) {
@@ -678,6 +713,15 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                     }
                     if (result[0].advance_payment_allowed !== undefined) {
                         client.advance_payment_allowed = result[0].advance_payment_allowed;
+                    }
+                    if (result[0].advance_available !== undefined) {
+                        client.advance_available = result[0].advance_available;
+                    }
+                    if (result[0].advance_credit_used !== undefined) {
+                        client.advance_credit_used = result[0].advance_credit_used;
+                    }
+                    if (result[0].pos_advance_session_used !== undefined) {
+                        client.pos_advance_session_used = result[0].pos_advance_session_used;
                     }
                 }
                 self._update_advance_order_info();
@@ -699,9 +743,12 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             }
             var order = this.pos.get_order();
             var client = order ? order.get_client() : false;
+            // Saldo real menos lo gastado en sesión (máx. contador local o
+            // servidor): un refresh no debe volver a ofrecer el saldo ya
+            // gastado en una orden anterior de la misma sesión.
             var balance = client ? Math.max(
                 (client.pos_advance_balance || 0) -
-                advance_used_for(this.pos, client.id), 0) : 0;
+                advance_used_total(this.pos, client), 0) : 0;
             var show = !!order && !!client && client.advance_payment_allowed &&
                 balance > 0.001 && order.get_orderlines().length > 0;
             box.style.display = show ? '' : 'none';

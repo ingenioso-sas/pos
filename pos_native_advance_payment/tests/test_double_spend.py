@@ -260,6 +260,10 @@ class TestDoubleSpendSameSession(TransactionCase):
         # Lo gastado en la sesión abierta descuenta del disponible...
         self.assertAlmostEqual(
             self.partner.advance_available, 500.0)
+        # ...el cap de sesión queda expuesto para que la UI use
+        # max(contador local, servidor) sin doble descuento.
+        self.assertAlmostEqual(
+            self.partner.pos_advance_session_used, 1500.0)
         # ...y el guard del TPV debe ver exactamente lo mismo.
         order2 = self.env["pos.order"].create(
             {

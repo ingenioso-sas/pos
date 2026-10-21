@@ -36,6 +36,15 @@ class ResPartner(models.Model):
         help="Cupo libre del cliente, sin contar el saldo a favor."
     )
 
+    pos_advance_session_used = fields.Float(
+        string="Saldo Gastado en Sesión Abierta",
+        compute="_compute_advance_amounts",
+        help="Lo ya pagado con Saldo a Favor en órdenes de sesiones TPV "
+             "abiertas de la compañía. La UI lo usa con max(contador "
+             "local, este valor) para evitar doble descuento tras un "
+             "refresh del TPV."
+    )
+
     advance_payment_allowed = fields.Boolean(
         string="Permite Saldo a Favor en TPV",
         default=True,
@@ -204,6 +213,7 @@ class ResPartner(models.Model):
                 session_used = 0.0
             partner.advance_available = total + overdraft - used - session_used
             partner.advance_credit_remaining = overdraft - used - session_used
+            partner.pos_advance_session_used = session_used
 
     def action_pos_advance_history(self):
         """Abrir líneas CxC sin conciliar (pagos + notas crédito)."""
