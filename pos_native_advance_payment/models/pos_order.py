@@ -88,17 +88,45 @@ class PosOrder(models.Model):
 
     @api.model
     def _get_session_advance_used(self, session, partner, exclude_order_id=None):
-        """Saldo ya digitado con el método en la sesión abierta (órdenes
+        """Saldo ya digitado con el método en UNA sesión abierta (órdenes
         guardadas; la actual aún no existe en BD y llega por UI). Evita que
         dos ventas seguidas rebasen el cupo antes del cierre."""
+        if not session:
+            return 0.0
+        return self._get_open_sessions_advance_used(
+            partner,
+            session.company_id,
+            session_ids=session.ids,
+            exclude_order_id=exclude_order_id,
+        )
+
+    @api.model
+    def _get_open_sessions_advance_used(self, partner, company, session_ids=None,
+                                        exclude_order_id=None):
+        """Uso de saldo en TODAS las sesiones abiertas de la compañía.
+
+        El saldo es fungible por socio: dos cajas/turnos con sesiones
+        abiertas distintas no pueden gastar el mismo dinero (cubre sesiones
+        rescue y multicaja). La orden actual se excluye (aún no existe en
+        BD y llega por UI).
+        """
         domain = [
-            ('session_id', '=', session.id),
-            ('partner_id', '=', partner.id),
-            ('state', '!=', 'cancel'),
-            ('is_advance_deposit', '=', False),
+            ("partner_id", "=", partner.id),
+            ("state", "!=", "cancel"),
+            ("is_advance_deposit", "=", False),
         ]
+        if session_ids is None:
+            open_sessions = self.env["pos.session"].search(
+                [
+                    ("state", "!=", "closed"),
+                    ("config_id.company_id", "=", company.id),
+                ]
+            )
+            domain.append(("session_id", "in", open_sessions.ids))
+        else:
+            domain.append(("session_id", "in", session_ids))
         if exclude_order_id:
-            domain.append(('id', '!=', exclude_order_id))
+            domain.append(("id", "!=", exclude_order_id))
         total = 0.0
         for other in self.search(domain):
             total += sum(other.payment_ids.filtered(
@@ -107,10 +135,16 @@ class PosOrder(models.Model):
         return total
 
     @api.model
-    def _get_advance_credit_used(self, partner):
+    def _get_advance_credit_used(self, partner, exclude_open_sessions=True):
         """Sobregiro en uso: residual abierto de facturas nacidas de ventas
         TPV con Saldo a Favor. Esas facturas consumieron cupo de crédito que
-        aún no se ha pagado por otra vía."""
+        aún no se ha pagado por otra vía.
+
+        Con exclude_open_sessions (defecto) se ignoran las facturas cuyo
+        pedido origen sigue en sesión abierta: ese consumo ya lo descuenta
+        el cap de sesiones y contarlo dos veces bloquearía de más ventas
+        legítimas (p. ej. saldo 4000, venta1 2000, venta2 2000).
+        """
         methods = self.env['pos.payment.method'].search(
             [('is_advance_payment', '=', True)])
         if not methods:
@@ -127,6 +161,13 @@ class PosOrder(models.Model):
             ('invoice_origin', 'in', order_names),
             ('amount_residual', '>', 0.001),
         ])
+        if exclude_open_sessions:
+            open_names = set(self.search([
+                ('partner_id', '=', partner.id),
+                ('state', 'not in', ('cancel', 'done')),
+            ]).mapped('name'))
+            invoices = invoices.filtered(
+                lambda inv: inv.invoice_origin not in open_names)
         return sum(invoices.mapped('amount_residual'))
 
     @api.model
@@ -219,10 +260,10 @@ class PosOrder(models.Model):
                 ) % (advance_amount, order.amount_total))
             available = partner.pos_advance_balance + \
                 self._get_effective_overdraft(partner) - \
-                self._get_advance_credit_used(partner)
-            if order.session_id:
-                available -= self._get_session_advance_used(
-                    order.session_id, partner,
+                self._get_advance_credit_used(partner) - \
+                self._get_open_sessions_advance_used(
+                    partner,
+                    order.company_id or order.session_id.company_id,
                     exclude_order_id=order.id or None)
             if advance_amount - available > 0.001:
                 raise ValidationError(_(

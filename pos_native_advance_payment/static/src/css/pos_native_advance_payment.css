@@ -48,3 +48,25 @@
 .advance-balance-info .adv-used-val {
     font-weight: bold;
 }
+.advance-order-info {
+    border-top: 1px solid #dee2e6;
+    background: #f8f9fa;
+    padding: 6px 12px 8px;
+}
+.advance-order-info .adv-order-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.advance-order-info .adv-order-row .label {
+    font-weight: 500;
+}
+.advance-order-info .adv-order-balance,
+.advance-order-info .adv-order-total {
+    font-weight: bold;
+}
+.advance-order-info .adv-order-remaining {
+    font-weight: bold;
+    font-size: 1.1em;
+}

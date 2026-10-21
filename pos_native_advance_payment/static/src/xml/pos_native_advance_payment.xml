@@ -57,6 +57,26 @@
         </t>
     </t>
 
+    <!-- Saldo a favor bajo el total en la pantalla de productos -->
+    <t t-extend="OrderWidget">
+        <t t-jquery=".summary" t-operation="after">
+            <div class="advance-order-info" style="display: none;">
+                <div class="detail adv-order-row">
+                    <span class="label">Saldo a Favor:</span>
+                    <span class="adv-order-balance">0</span>
+                </div>
+                <div class="detail adv-order-row">
+                    <span class="label">Total a Pagar:</span>
+                    <span class="adv-order-total">0</span>
+                </div>
+                <div class="detail adv-order-row">
+                    <span class="label">Disponible Estimado:</span>
+                    <span class="adv-order-remaining">0</span>
+                </div>
+            </div>
+        </t>
+    </t>
+
     <!-- Favor y crédito dentro de la casilla (compacto, solo con datos) -->
     <t t-extend="PaymentScreen-Paymentmethods">
         <t t-jquery=".button.paymentmethod" t-operation="append">

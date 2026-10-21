@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'POS Native Advance Payment (Cartera)',
-    'version': '13.0.1.0.1',
+    'version': '13.0.1.2.1',
     'category': 'Point of Sale',
     'summary': 'Use native Odoo advance payments (saldos a favor) seamlessly in POS.',
     'description': """
@@ -20,6 +20,7 @@
         'security/ir.model.access.csv',
         'data/product_deposit.xml',
         'views/res_config_settings_views.xml',
+        'views/pos_config_views.xml',
         'views/pos_payment_method_views.xml',
         'views/res_partner_views.xml',
         'views/assets.xml',

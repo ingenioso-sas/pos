@@ -18,7 +18,11 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
         'advance_credit_remaining',
     ]);
     models.load_fields('pos.payment.method', ['is_advance_payment']);
-    models.load_fields('pos.config', ['pos_deposit_product_id']);
+    models.load_fields('pos.config', [
+        'pos_deposit_product_id',
+        'pos_advance_suggest',
+        'pos_advance_suggest_mode',
+    ]);
 
     var original_orders = {}; // cid -> original order, keyed by deposit order cid
 
@@ -53,6 +57,85 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
     // Register popup with GUI (use define_popup so it's created in build_widgets)
     gui.define_popup({name: 'deposit_amount', widget: DepositAmountPopup});
 
+    // --- Contabilidad LOCAL de saldo gastado en la sesión (UI veraz) ---
+    // El backend descuenta en su validación (autoritativo), pero los campos
+    // del partner en caché no bajan hasta el cierre/reconciliación: sin esto
+    // la pantalla seguía mostrando el saldo completo y permitía intentarlo.
+    // Se registra al validar cada orden y se revierte si el push falla con
+    // error de negocio (la orden sale de la cola). En error de red se queda
+    // contado: la orden sigue en pie y se reenviará.
+
+    function advance_order_amount(pos, data) {
+        var total = 0;
+        _.each(data.statement_ids || [], function (st) {
+            var line = (st && st[2]) || {};
+            var pm = pos.payment_methods_by_id[line.payment_method_id];
+            if (pm && pm.is_advance_payment) {
+                total += line.amount || 0;
+            }
+        });
+        return total;
+    }
+
+    function advance_session_state(pos) {
+        var sid = pos.pos_session ? pos.pos_session.id : 0;
+        if (!pos._advance_session_used ||
+                pos._advance_session_used.session_id !== sid) {
+            var state = {session_id: sid, by_partner: {}, by_order: {}};
+            pos._advance_session_used = state;
+            // Sembrar con órdenes aún pendientes en localStorage (recarga
+            // con red caída): también gastan saldo y deben restarse.
+            _.each(pos.db.get_orders(), function (stored) {
+                var data = (stored && stored.data) || {};
+                var amount = advance_order_amount(pos, data);
+                if (amount > 0.001 && data.partner_id && data.uid) {
+                    state.by_order[data.uid] = {
+                        partner: data.partner_id,
+                        amount: amount,
+                    };
+                    state.by_partner[data.partner_id] =
+                        (state.by_partner[data.partner_id] || 0) + amount;
+                }
+            });
+        }
+        return pos._advance_session_used;
+    }
+
+    function advance_register_order(pos, order) {
+        var data = order.export_as_JSON();
+        var amount = advance_order_amount(pos, data);
+        var partner = order.get_client();
+        if (amount <= 0.001 || !partner || !data.uid) {
+            return;
+        }
+        var state = advance_session_state(pos);
+        if (state.by_order[data.uid]) {
+            return; // idempotente (revalidaciones)
+        }
+        state.by_order[data.uid] = {partner: partner.id, amount: amount};
+        state.by_partner[partner.id] =
+            (state.by_partner[partner.id] || 0) + amount;
+    }
+
+    function advance_revert_order(pos, uid) {
+        var state = advance_session_state(pos);
+        var entry = state.by_order[uid];
+        if (!entry) {
+            return;
+        }
+        state.by_partner[entry.partner] =
+            (state.by_partner[entry.partner] || 0) - entry.amount;
+        if (state.by_partner[entry.partner] < 0.001) {
+            delete state.by_partner[entry.partner];
+        }
+        delete state.by_order[uid];
+    }
+
+    function advance_used_for(pos, partner_id) {
+        var state = advance_session_state(pos);
+        return state.by_partner[partner_id] || 0;
+    }
+
     // --- PaymentScreenWidget overrides ---
     screens.PaymentScreenWidget.include({
         init: function (parent, options) {
@@ -65,40 +148,8 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             var client = order.get_client();
 
             if (client) {
-                rpc.query({
-                    model: 'res.partner',
-                    method: 'read',
-                    args: [[client.id], [
-                        'pos_advance_balance',
-                        'advance_payment_allowed',
-                        'advance_overdraft_limit',
-                        'advance_credit_used',
-                        'advance_available',
-                        'advance_credit_remaining',
-                    ]]
-                }).then(function (result) {
-                    if (result && result.length) {
-                        if (result[0].pos_advance_balance !== undefined) {
-                            client.pos_advance_balance = result[0].pos_advance_balance;
-                            self.advance_balance = result[0].pos_advance_balance;
-                        }
-                        if (result[0].advance_payment_allowed !== undefined) {
-                            client.advance_payment_allowed = result[0].advance_payment_allowed;
-                        }
-                        if (result[0].advance_overdraft_limit !== undefined) {
-                            client.advance_overdraft_limit = result[0].advance_overdraft_limit;
-                        }
-                        if (result[0].advance_credit_used !== undefined) {
-                            client.advance_credit_used = result[0].advance_credit_used;
-                        }
-                        if (result[0].advance_available !== undefined) {
-                            client.advance_available = result[0].advance_available;
-                        }
-                        if (result[0].advance_credit_remaining !== undefined) {
-                            client.advance_credit_remaining = result[0].advance_credit_remaining;
-                        }
-                        self._refresh_advance_display();
-                    }
+                self._fetch_advance_client_data(client, function () {
+                    self._maybe_suggest_advance();
                 });
             }
 
@@ -109,6 +160,171 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
 
             this._super();
             this._mark_advance_methods();
+            this._bind_advance_client_change(order);
+            // Datos en caché (sin esperar al RPC): si ya califican, sugiere.
+            this._maybe_suggest_advance();
+        },
+        _fetch_advance_client_data: function (client, callback) {
+            var self = this;
+            rpc.query({
+                model: 'res.partner',
+                method: 'read',
+                args: [[client.id], [
+                    'pos_advance_balance',
+                    'advance_payment_allowed',
+                    'advance_overdraft_limit',
+                    'advance_credit_used',
+                    'advance_available',
+                    'advance_credit_remaining',
+                ]]
+            }).then(function (result) {
+                if (result && result.length) {
+                    if (result[0].pos_advance_balance !== undefined) {
+                        client.pos_advance_balance = result[0].pos_advance_balance;
+                        self.advance_balance = result[0].pos_advance_balance;
+                    }
+                    if (result[0].advance_payment_allowed !== undefined) {
+                        client.advance_payment_allowed = result[0].advance_payment_allowed;
+                    }
+                    if (result[0].advance_overdraft_limit !== undefined) {
+                        client.advance_overdraft_limit = result[0].advance_overdraft_limit;
+                    }
+                    if (result[0].advance_credit_used !== undefined) {
+                        client.advance_credit_used = result[0].advance_credit_used;
+                    }
+                    if (result[0].advance_available !== undefined) {
+                        client.advance_available = result[0].advance_available;
+                    }
+                    if (result[0].advance_credit_remaining !== undefined) {
+                        client.advance_credit_remaining = result[0].advance_credit_remaining;
+                    }
+                    self._refresh_advance_display();
+                }
+                if (callback) {
+                    callback();
+                }
+            }, function () {
+                if (callback) {
+                    callback();
+                }
+            });
+        },
+        _bind_advance_client_change: function (order) {
+            var self = this;
+            if (!order || order._advance_client_bound) {
+                return;
+            }
+            order._advance_client_bound = true;
+            order.bind('change:client', function () {
+                var current = order.get_client();
+                // Cliente distinto al ya sugerido: permite una sugerencia nueva.
+                if (!current || current.id !== order._advance_suggested_for) {
+                    order._advance_suggested = false;
+                }
+                // Solo actúa si la pantalla de pago sigue visible.
+                if (!self.$el || !self.$el.is(':visible') || !current) {
+                    return;
+                }
+                // Datos frescos antes de sugerir (el caché puede no traer saldo).
+                self._fetch_advance_client_data(current, function () {
+                    self._maybe_suggest_advance();
+                });
+            });
+        },
+        _get_advance_payment_method: function () {
+            var methods = this.pos.payment_methods || [];
+            for (var i = 0; i < methods.length; i++) {
+                if (methods[i].is_advance_payment) {
+                    return methods[i];
+                }
+            }
+            return false;
+        },
+        _get_suggest_amount: function (client) {
+            if (!client) {
+                return 0;
+            }
+            var mode = this.pos.config.pos_advance_suggest_mode || 'balance';
+            var base;
+            if (mode === 'available') {
+                base = client.advance_available || 0;
+            } else {
+                base = client.pos_advance_balance || 0;
+            }
+            // Menos lo ya gastado en esta sesión (los campos en caché no
+            // bajan hasta el cierre).
+            return Math.max(
+                base - advance_used_for(this.pos, client.id), 0);
+        },
+        // Alerta única por pedido: ofrece usar el saldo disponible.
+        // Se dispara con datos frescos (RPC) o en caché al abrir el pago.
+        _maybe_suggest_advance: function () {
+            var order = this.pos.get_order();
+            if (!order || order.is_deposit_order) {
+                return;
+            }
+            if (!this.pos.config.pos_advance_suggest) {
+                return;
+            }
+            if ((order.get_total_with_tax() || 0) <= 0.001) {
+                return;
+            }
+            var client = order.get_client();
+            if (!client || !client.advance_payment_allowed) {
+                return;
+            }
+            if (client.pos_advance_balance === undefined &&
+                    client.advance_available === undefined) {
+                return;
+            }
+            if (order._advance_suggested &&
+                    order._advance_suggested_for === client.id) {
+                return;
+            }
+            if (this._advance_tendered(order) > 0.001) {
+                return;
+            }
+            var method = this._get_advance_payment_method();
+            if (!method) {
+                return;
+            }
+            var available = this._get_suggest_amount(client);
+            if (available <= 0.001) {
+                return;
+            }
+            order._advance_suggested = true;
+            order._advance_suggested_for = client.id;
+            this._show_advance_suggest_popup(order, client, method, available);
+        },
+        _show_advance_suggest_popup: function (order, client, method, available) {
+            var self = this;
+            var due = order.get_due ? order.get_due() :
+                (order.get_total_with_tax() || 0) - (order.get_total_paid() || 0);
+            if (due <= 0.001) {
+                return;
+            }
+            var amount = Math.min(due, available);
+            this.gui.show_popup('confirm', {
+                'title': _t('Saldo a Favor Disponible'),
+                'body': _t('El cliente ') + client.name +
+                    _t(' tiene ') + this.format_currency(available) +
+                    _t(' de saldo a favor. ¿Desea pagar ') +
+                    this.format_currency(amount) +
+                    _t(' con ') + method.name + _t('?'),
+                'confirm': function () {
+                    // add_paymentline ignora montos extra y prellena la deuda
+                    // total: se fija el menor (deuda vs saldo) después de crear.
+                    order.add_paymentline(method);
+                    var line = order.selected_paymentline;
+                    if (line && line.payment_method &&
+                            line.payment_method.is_advance_payment) {
+                        line.set_amount(amount);
+                    }
+                    order.set_to_invoice(true);
+                    self.render_paymentlines();
+                    self._update_advance_remaining();
+                },
+            });
         },
         // Info compacta dentro de la casilla: favor y crédito por separado.
         // null sin cliente/datos (la plantilla no reserva altura entonces).
@@ -122,7 +338,9 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                     client.advance_available === undefined) {
                 return null;
             }
-            var favor = client.pos_advance_balance || 0;
+            var favor = Math.max(
+                (client.pos_advance_balance || 0) -
+                advance_used_for(this.pos, client.id), 0);
             var remaining_credit = client.advance_credit_remaining;
             if (remaining_credit === undefined) {
                 return null;
@@ -167,7 +385,9 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             var client = order ? order.get_client() : false;
             var box = this.$('.advance-balance-info');
             if (box.length && client && client.advance_payment_allowed) {
-                var avail = client.advance_available || 0;
+                var avail = Math.max(
+                    (client.advance_available || 0) -
+                    advance_used_for(this.pos, client.id), 0);
                 var remaining = avail - this._advance_tendered();
                 box.find('.adv-avail-val').text(this.format_currency(avail));
                 box.find('.adv-avail-val').css(
@@ -197,7 +417,10 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                 } else {
                     small.remove();
                 }
-                var exceeded = !!client && (tendered - (client.advance_available || 0) > 0.001);
+                var avail_now = Math.max(
+                    (client.advance_available || 0) -
+                    advance_used_for(this.pos, client.id), 0);
+                var exceeded = !!client && (tendered - avail_now > 0.001);
                 $(this).toggleClass('advance-exceeded', exceeded);
                 $(this).toggleClass('advance-payment-method', !exceeded);
             });
@@ -251,11 +474,16 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             if (client.advance_available === undefined) {
                 return true; // Sin datos frescos: decide el backend.
             }
-            if (tendered - client.advance_available > 0.001) {
+            // Disponible real menos lo ya gastado en esta sesión (los campos
+            // del partner no bajan hasta el cierre, pero la venta ya gastó).
+            var avail_now = Math.max(
+                client.advance_available -
+                advance_used_for(this.pos, client.id), 0);
+            if (tendered - avail_now > 0.001) {
                 this.gui.show_popup('error', {
                     'title': _t('Saldo a Favor Insuficiente'),
                     'body': _t('Solicitado: ') + this.format_currency(tendered) +
-                            _t(' | Disponible: ') + this.format_currency(client.advance_available) +
+                            _t(' | Disponible: ') + this.format_currency(avail_now) +
                             _t('. Ajuste el pago o registre un abono.'),
                 });
                 return false;
@@ -265,12 +493,15 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
         // Red de seguridad: si el backend rechaza (lógica, código 200) una
         // orden con Saldo, se saca de la cola de reintentos para que no quede
         // "pendiente" eternamente bloqueando el cierre. Solo negocio, nunca red.
+        // Además se revierte su consumo local de saldo: esa orden no quedó
+        // válida, así que el saldo vuelve a estar disponible en pantalla.
         _handleFailedPushForInvoice: function (order, refresh_screen, error) {
             this._super(order, refresh_screen, error);
             try {
                 if (error && error.code === 200 && order &&
                         this._advance_tendered(order) > 0.001) {
                     this.pos.db.remove_order(order.uid);
+                    advance_revert_order(this.pos, order.uid);
                     if (!this.pos.db.get_orders().length) {
                         this.pos.set('failed', false);
                     }
@@ -289,6 +520,14 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                 return;
             }
             this._super();
+            // La orden ya pasó validación y entró a la cola/envío: contabiliza
+            // su consumo de saldo en la sesión para que las pantallas lo
+            // descuenten de inmediato (el backend también lo valida).
+            try {
+                advance_register_order(this.pos, order);
+            } catch (e) {
+                // Nunca romper la validación por este contador.
+            }
         },
         click_paymentmethods: function (id) {
             var order = this.pos.get_order();
@@ -393,6 +632,79 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             } else {
                 this.pos.delete_current_order();
             }
+        },
+    });
+
+    // Saldo a favor bajo el total (pantalla de productos, en vivo).
+    // Solo lectura: saldo real - total del pedido = disponible estimado.
+    screens.OrderWidget.include({
+        bind_order_events: function () {
+            this._super();
+            var order = this.pos.get_order();
+            if (order && !order._advance_balance_bound) {
+                order._advance_balance_bound = true;
+                order.bind('change:client', this._on_advance_client_change, this);
+            }
+        },
+        _on_advance_client_change: function () {
+            var self = this;
+            var order = this.pos.get_order();
+            var client = order ? order.get_client() : false;
+            if (!client) {
+                this._update_advance_order_info();
+                return;
+            }
+            rpc.query({
+                model: 'res.partner',
+                method: 'read',
+                args: [[client.id], [
+                    'pos_advance_balance',
+                    'advance_payment_allowed',
+                ]],
+            }).then(function (result) {
+                if (result && result.length) {
+                    if (result[0].pos_advance_balance !== undefined) {
+                        client.pos_advance_balance = result[0].pos_advance_balance;
+                    }
+                    if (result[0].advance_payment_allowed !== undefined) {
+                        client.advance_payment_allowed = result[0].advance_payment_allowed;
+                    }
+                }
+                self._update_advance_order_info();
+            }, function () {
+                self._update_advance_order_info();
+            });
+        },
+        update_summary: function () {
+            this._super();
+            this._update_advance_order_info();
+        },
+        _update_advance_order_info: function () {
+            if (!this.el) {
+                return;
+            }
+            var box = this.el.querySelector('.advance-order-info');
+            if (!box) {
+                return;
+            }
+            var order = this.pos.get_order();
+            var client = order ? order.get_client() : false;
+            var balance = client ? Math.max(
+                (client.pos_advance_balance || 0) -
+                advance_used_for(this.pos, client.id), 0) : 0;
+            var show = !!order && !!client && client.advance_payment_allowed &&
+                balance > 0.001 && order.get_orderlines().length > 0;
+            box.style.display = show ? '' : 'none';
+            if (!show) {
+                return;
+            }
+            var total = order.get_total_with_tax() || 0;
+            var remaining = balance - total;
+            box.querySelector('.adv-order-balance').textContent = this.format_currency(balance);
+            box.querySelector('.adv-order-total').textContent = this.format_currency(total);
+            var rem = box.querySelector('.adv-order-remaining');
+            rem.textContent = this.format_currency(remaining);
+            rem.style.color = remaining >= -0.001 ? '#28a745' : '#dc3545';
         },
     });
 
