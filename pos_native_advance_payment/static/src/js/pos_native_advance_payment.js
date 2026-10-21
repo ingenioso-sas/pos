@@ -78,6 +78,9 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
     }
 
     function advance_session_state(pos) {
+        if (!pos) {
+            return {session_id: 0, by_partner: {}, by_order: {}};
+        }
         var sid = pos.pos_session ? pos.pos_session.id : 0;
         if (!pos._advance_session_used ||
                 pos._advance_session_used.session_id !== sid) {
@@ -419,7 +422,9 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                 }
                 var avail_now = Math.max(
                     (client.advance_available || 0) -
-                    advance_used_for(this.pos, client.id), 0);
+                    // NOTA: dentro del callback de .each(), this es el DOM
+                    // element; el widget queda en self.
+                    advance_used_for(self.pos, client.id), 0);
                 var exceeded = !!client && (tendered - avail_now > 0.001);
                 $(this).toggleClass('advance-exceeded', exceeded);
                 $(this).toggleClass('advance-payment-method', !exceeded);
