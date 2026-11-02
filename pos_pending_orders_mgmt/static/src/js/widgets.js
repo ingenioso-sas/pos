@@ -91,9 +91,32 @@ odoo.define('pos_pending_orders_mgmt.custom_screen', function (require) {
                 var $orderline = $(orderline);
 
                 $orderline.find('.retry-order').click(function () {
+                    var stored = self.pos.db.get_order(order_data.id);
+                    if (!stored) {
+                        self.render_list();
+                        return;
+                    }
+
                     var order = new models.Order({}, { pos: self.pos });
-                    order.init_from_JSON(order_data.data);
-                    self.pos.push_order(order).then(function () {
+                    order.init_from_JSON(stored.data);
+
+                    // init_from_JSON resets to_invoice/to_electronic_invoice;
+                    // restore the invoicing intent stored with the pending order
+                    // so the retry is sent exactly as the original one.
+                    order.to_invoice = 'to_invoice' in stored.data ? stored.data.to_invoice : order.to_invoice;
+                    order.to_electronic_invoice = 'to_electronic_invoice' in stored.data ? stored.data.to_electronic_invoice : order.to_electronic_invoice;
+
+                    var retry;
+                    if (order.is_to_invoice()) {
+                        retry = self.pos.push_and_invoice_order(order);
+                    } else {
+                        retry = self.pos.flush_mutex.exec(function () {
+                            return self.pos._flush_orders([stored], {'show_error': true});
+                        });
+                    }
+                    retry.then(function () {
+                        self.render_list();
+                    }).guardedCatch(function () {
                         self.render_list();
                     });
                 });

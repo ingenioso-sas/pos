@@ -2,7 +2,7 @@
 {
     "name": "POS Pending Orders Management",
     "summary": "Manage pending orders from the synchronization widget",
-    "version": "13.0.1.0.1",
+    "version": "13.0.1.0.2",
     "category": "Point of Sale",
     "author": "Ingenioso.co",
     "license": "LGPL-3",
