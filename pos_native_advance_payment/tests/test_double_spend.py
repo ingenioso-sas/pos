@@ -124,14 +124,16 @@ class TestDoubleSpendSameSession(TransactionCase):
 
     def _post_invoice_for(self, partner, order, amount):
         """Factura publicada con residual (lo que nace al facturar la orden)."""
-        journal = self.env["account.journal"].search(
-            [
-                ("type", "=", "sale"),
-                ("company_id", "=", self.company.id),
-                ("resolution_id", "=", False),
-            ],
-            limit=1,
-        )
+        domain = [
+            ("type", "=", "sale"),
+            ("company_id", "=", self.company.id),
+            ("resolution_id", "=", False),
+        ]
+        try:
+            journal = self.env["account.journal"].search(domain, limit=1)
+        except ValueError:
+            # Sin localización CO (p. ej. base scratch): sin ese filtro.
+            journal = self.env["account.journal"].search(domain[:2], limit=1)
         income = self.env["account.account"].search(
             [
                 ("user_type_id.type", "=", "other"),
@@ -385,6 +387,43 @@ class TestDoubleSpendSameSession(TransactionCase):
         move.post()
         return move.line_ids.filtered(
             lambda l: l.account_id == rxc and l.credit > 0.0)
+
+    def test_compute_batch_matches_single_logic(self):
+        """El compute batch debe replicar los helpers por socio.
+
+        Regresión del search_read lento: el batch usa ~10 queries fijas
+        en vez de N+1 por partner; los valores deben ser idénticos a los
+        de _get_unreconciled_advance_payments / _get_unreconciled_credit_notes
+        / _get_advance_credit_used / _get_open_sessions_advance_used.
+        """
+        partner2 = self.env["res.partner"].create(
+            {"name": "Carlos Batch Dos"})
+        self._make_advance(self.partner, 2000.0)
+        self._make_advance(partner2, 500.0)
+        partners = self.partner | partner2
+        partners.invalidate_cache()
+        for partner in partners:
+            total = sum(
+                residual for _payment, residual
+                in partner._get_unreconciled_advance_payments())
+            total += sum(
+                note.amount_residual
+                for note in partner._get_unreconciled_credit_notes())
+            used = self.env["pos.order"]._get_advance_credit_used(partner)
+            overdraft = partner._get_effective_overdraft()
+            session_used = self.env["pos.order"].\
+                _get_open_sessions_advance_used(
+                    partner, partner.company_id or self.env.company)
+            self.assertAlmostEqual(partner.pos_advance_balance, total)
+            self.assertAlmostEqual(partner.advance_credit_used, used)
+            self.assertAlmostEqual(
+                partner.advance_available,
+                total + overdraft - used - session_used)
+            self.assertAlmostEqual(
+                partner.advance_credit_remaining,
+                overdraft - used - session_used)
+            self.assertAlmostEqual(
+                partner.pos_advance_session_used, session_used)
 
     def test_mirror_to_invoice_direct_pairing(self):
         """Espejo sin enlace nativo previo paga la factura (Shop/1416).

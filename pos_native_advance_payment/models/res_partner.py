@@ -167,53 +167,238 @@ class ResPartner(models.Model):
             (company.advance_overdraft_limit or 0.0)
 
     def _compute_advance_amounts(self):
+        # Versión batch: el search_read masivo del POS instancia miles de
+        # partners y serializar cada uno disparaba este compute con N+1
+        # queries por partner (timeout). Aquí van ~10 queries en total,
+        # constantes respecto al nº de partners. Misma fórmula y valores
+        # que la versión por partner (los helpers de socio único se
+        # conservan para wizard/reporte/validación).
+        if not self:
+            return
+        try:
+            data = self._batch_advance_data()
+        except Exception as e:
+            _logger.warning(
+                'Error calculando saldos a favor en batch: %s', e)
+            data = {}
         for partner in self:
-            total = 0.0
             try:
-                for _payment, residual in partner._get_unreconciled_advance_payments():
-                    total += residual
-                for note in partner._get_unreconciled_credit_notes():
-                    total += note.amount_residual
-            except Exception as e:
-                _logger.warning(
-                    'Error calculando saldo a favor de %s: %s',
-                    partner.display_name, e,
-                )
-                total = 0.0
-            partner.pos_advance_balance = total
-            try:
-                used = self.env['pos.order']._get_advance_credit_used(partner)
-            except Exception as e:
-                _logger.warning(
-                    'Error calculando crédito en uso de %s: %s',
-                    partner.display_name, e,
-                )
-                used = 0.0
-            partner.advance_credit_used = used
-            try:
-                overdraft = partner._get_effective_overdraft()
+                vals = data.get(partner.id, {})
+                total = vals.get('total', 0.0)
+                used = vals.get('used', 0.0)
+                overdraft = vals.get('overdraft', 0.0)
+                session_used = vals.get('session_used', 0.0)
             except Exception:
-                overdraft = 0.0
-            # Alineado con la fórmula del guard del TPV
-            # (pos.order._check_advance_payment_restrictions): lo gastado en
-            # sesiones abiertas NO está en `used` (ese cálculo excluye las
-            # facturas de órdenes en sesión abierta para no doble-contarlo),
-            # pero sí consume el saldo real. Sin este descuento, un refresh
-            # del TPV (que borra el contador local) volvía a mostrar el
-            # saldo completo y el usuario solo veía el rechazo al validar.
-            try:
-                session_used = self.env["pos.order"].\
-                    _get_open_sessions_advance_used(
-                        partner, partner.company_id or self.env.company)
-            except Exception as e:
-                _logger.warning(
-                    'Error calculando uso de saldo en sesión de %s: %s',
-                    partner.display_name, e,
-                )
-                session_used = 0.0
-            partner.advance_available = total + overdraft - used - session_used
-            partner.advance_credit_remaining = overdraft - used - session_used
+                total = used = overdraft = session_used = 0.0
+            partner.pos_advance_balance = total
+            partner.advance_credit_used = used
+            partner.advance_available = \
+                total + overdraft - used - session_used
+            partner.advance_credit_remaining = \
+                overdraft - used - session_used
             partner.pos_advance_session_used = session_used
+
+    def _batch_advance_data(self):
+        """Mapas {partner_id: valores} con queries batch.
+
+        Réplica exacta de la semántica por partner:
+        - total = residuales de pagos inbound publicados sin conciliar
+          (solo parte no aplicada) + residuales de out_refund abiertas.
+        - used = residual abierto de out_invoice nacidas de ventas TPV
+          con Saldo a Favor, excluyendo órdenes en sesión abierta.
+        - session_used = consumos positivos con Saldo en sesiones
+          abiertas (las devoluciones NO consumen: crean crédito).
+        """
+        partners = self
+        pids = partners.ids
+        pid_set = set(pids)
+        MoveLine = self.env['account.move.line']
+        Payment = self.env['account.payment']
+        Move = self.env['account.move']
+        PosOrder = self.env['pos.order']
+
+        receivable_by_pid = {}
+        for partner in partners:
+            rxc = partner.property_account_receivable_id
+            receivable_by_pid[partner.id] = rxc.id if rxc else False
+
+        # 1) Residuales de pagos por partner (1-3 queries).
+        pay_residual_by_pid = dict.fromkeys(pids, 0.0)
+        payments = Payment.search([
+            ('partner_id', 'in', pids),
+            ('payment_type', '=', 'inbound'),
+            ('partner_type', '=', 'customer'),
+            ('state', '=', 'posted'),
+        ])
+        pay_by_id = {pay.id: pay for pay in payments}
+        has_payment_id = 'payment_id' in MoveLine._fields
+        with_lines = set()
+        if payments and has_payment_id:
+            amls = MoveLine.search([
+                ('payment_id', 'in', payments.ids),
+                ('partner_id', 'in', pids),
+                ('reconciled', '=', False),
+                ('move_id.state', '=', 'posted'),
+            ])
+            by_pay = {}
+            for line in amls:
+                by_pay.setdefault(line.payment_id.id, []).append(line)
+            for pay_id, lines in by_pay.items():
+                pay = pay_by_id.get(pay_id)
+                if not pay:
+                    continue
+                rel = [line for line in lines
+                       if line.account_id.id ==
+                       receivable_by_pid.get(pay.partner_id.id)
+                       and line.partner_id.id == pay.partner_id.id]
+                if rel:
+                    with_lines.add(pay_id)
+                    pay_residual_by_pid[pay.partner_id.id] = \
+                        pay_residual_by_pid.get(pay.partner_id.id, 0.0) + \
+                        sum(-line.amount_residual for line in rel
+                            if line.amount_residual < 0.0)
+        # Fallback (sin payment_id en línea o pago sin líneas): misma
+        # lógica que _get_payment_residual_fallback, en batch.
+        missing = [pay for pay in payments if pay.id not in with_lines] \
+            if has_payment_id else list(payments)
+        if missing:
+            names = [pay.move_name for pay in missing
+                     if getattr(pay, 'move_name', False)]
+            moves = Move.search([('name', 'in', names)]) if names else Move
+            move_by_name = {move.name: move for move in moves} \
+                if moves else {}
+            need = [pay for pay in missing
+                    if move_by_name.get(getattr(pay, 'move_name', False))]
+            amls_by_move = {}
+            if need:
+                need_move_ids = []
+                for pay in need:
+                    mid = move_by_name[pay.move_name].id
+                    if mid not in need_move_ids:
+                        need_move_ids.append(mid)
+                for line in MoveLine.search([
+                        ('move_id', 'in', need_move_ids),
+                        ('partner_id', 'in', pids),
+                        ('reconciled', '=', False),
+                        ('move_id.state', '=', 'posted'),
+                ]):
+                    amls_by_move.setdefault(line.move_id.id, []).append(line)
+            for pay in missing:
+                move = move_by_name.get(getattr(pay, 'move_name', False))
+                if not move:
+                    pay_residual_by_pid[pay.partner_id.id] = \
+                        pay_residual_by_pid.get(pay.partner_id.id, 0.0) + \
+                        (0.0 if pay.invoice_ids else pay.amount)
+                    continue
+                rel = [line for line in amls_by_move.get(move.id, [])
+                       if line.account_id.id ==
+                       receivable_by_pid.get(pay.partner_id.id)
+                       and line.partner_id.id == pay.partner_id.id]
+                pay_residual_by_pid[pay.partner_id.id] = \
+                    pay_residual_by_pid.get(pay.partner_id.id, 0.0) + \
+                    sum(-line.amount_residual for line in rel
+                        if line.amount_residual < 0.0)
+
+        # 2) Notas crédito abiertas por partner (1 query).
+        note_by_pid = dict.fromkeys(pids, 0.0)
+        for row in Move.read_group(
+                [('partner_id', 'in', pids),
+                 ('type', '=', 'out_refund'),
+                 ('state', '=', 'posted'),
+                 ('amount_residual', '>', 0.001)],
+                ['partner_id', 'amount_residual'], ['partner_id']):
+            note_by_pid[row['partner_id'][0]] = row['amount_residual']
+
+        total_by_pid = {
+            pid: pay_residual_by_pid.get(pid, 0.0) +
+            note_by_pid.get(pid, 0.0) for pid in pids}
+
+        # 3) Crédito en uso por partner (4 queries máx).
+        used_by_pid = dict.fromkeys(pids, 0.0)
+        methods = self.env['pos.payment.method'].search(
+            [('is_advance_payment', '=', True)])
+        if methods:
+            adv_payments = self.env['pos.payment'].search([
+                ('payment_method_id', 'in', methods.ids),
+                ('pos_order_id.partner_id', 'in', pids),
+            ])
+            names_by_pid = {}
+            for pay in adv_payments:
+                order = pay.pos_order_id
+                if order and order.partner_id.id in pid_set:
+                    names_by_pid.setdefault(
+                        order.partner_id.id, set()).add(order.name)
+            all_names = set()
+            for names in names_by_pid.values():
+                all_names.update(names)
+            invoices = Move.search([
+                ('type', '=', 'out_invoice'),
+                ('state', '=', 'posted'),
+                ('invoice_origin', 'in', list(all_names)),
+                ('amount_residual', '>', 0.001),
+            ]) if all_names else Move
+            inv_by_origin = {}
+            for inv in invoices:
+                inv_by_origin.setdefault(inv.invoice_origin, []).append(inv)
+            open_by_pid = {}
+            for order in PosOrder.search([
+                    ('partner_id', 'in', pids),
+                    ('state', 'not in', ('cancel', 'done'))]):
+                open_by_pid.setdefault(order.partner_id.id, set()).add(
+                    order.name)
+            for pid in pids:
+                candidates = names_by_pid.get(pid, set()) - \
+                    open_by_pid.get(pid, set())
+                used_by_pid[pid] = sum(
+                    inv.amount_residual for name in candidates
+                    for inv in inv_by_origin.get(name, []))
+
+        # 4) Uso en sesiones abiertas por compañía (2 queries por compañía).
+        session_used_by_pid = dict.fromkeys(pids, 0.0)
+        company_of = {}
+        for partner in partners:
+            company_of[partner.id] = partner.company_id.id \
+                if partner.company_id else self.env.company.id
+        pids_by_company = {}
+        for pid, cid in company_of.items():
+            pids_by_company.setdefault(cid, []).append(pid)
+        for cid, cpids in pids_by_company.items():
+            open_sessions = self.env['pos.session'].search([
+                ('state', '!=', 'closed'),
+                ('config_id.company_id', '=', cid),
+            ])
+            if not open_sessions:
+                continue
+            for order in PosOrder.search([
+                    ('partner_id', 'in', cpids),
+                    ('session_id', 'in', open_sessions.ids),
+                    ('state', '!=', 'cancel'),
+                    ('is_advance_deposit', '=', False)]):
+                amount = sum(
+                    value for value in order.payment_ids.filtered(
+                        lambda p: p.payment_method_id.is_advance_payment
+                    ).mapped('amount') if value > 0.0)
+                session_used_by_pid[order.partner_id.id] = \
+                    session_used_by_pid.get(order.partner_id.id, 0.0) + amount
+
+        # 5) Cupo por compañía (1 query) y ensamblado.
+        company_ids = set(company_of.values())
+        overdraft_by_company = {
+            company.id: company.advance_overdraft_limit or 0.0
+            for company in self.env['res.company'].browse(
+                list(company_ids))}
+        data = {}
+        for partner in partners:
+            own = partner.advance_overdraft_limit or 0.0
+            company_default = overdraft_by_company.get(
+                company_of[partner.id], 0.0) or 0.0
+            data[partner.id] = {
+                'total': total_by_pid.get(partner.id, 0.0),
+                'used': used_by_pid.get(partner.id, 0.0),
+                'overdraft': own or company_default,
+                'session_used': session_used_by_pid.get(partner.id, 0.0),
+            }
+        return data
 
     def action_pos_advance_history(self):
         """Abrir líneas CxC sin conciliar (pagos + notas crédito)."""

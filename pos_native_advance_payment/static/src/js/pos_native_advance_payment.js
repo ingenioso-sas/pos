@@ -9,13 +9,13 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
     var PopupWidget = require('point_of_sale.popups');
     var _t = core._t;
 
+    // Solo campos ALMACENADOS en la carga masiva: los computados de
+    // saldo se piden lazy por cliente (detalle, pago, OrderWidget).
+    // Cargarlos aquí obligaba al search_read inicial a calcularlos para
+    // TODOS los partners (N+1 masivo, timeout del POS).
     models.load_fields('res.partner', [
-        'pos_advance_balance',
         'advance_payment_allowed',
         'advance_overdraft_limit',
-        'advance_credit_used',
-        'advance_available',
-        'advance_credit_remaining',
     ]);
     models.load_fields('pos.payment.method', ['is_advance_payment']);
     models.load_fields('pos.config', [
@@ -847,6 +847,56 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             // Go to payment screen so user can select payment method
             // (efectivo/banco: queda en caja/extracto de la sesión)
             this.gui.show_screen('payment');
+        },
+    });
+
+    // ClientList: la carga masiva ya no trae saldos (ver load_fields).
+    // Al mostrar el detalle de UN cliente se piden lazy una sola vez.
+    screens.ClientListScreenWidget.include({
+        display_client_details: function (visibility, partner, clickpos) {
+            this._super(visibility, partner, clickpos);
+            if (visibility !== 'show' || !partner) {
+                return;
+            }
+            if (partner.pos_advance_balance !== undefined ||
+                    partner._advance_fetched) {
+                return;
+            }
+            partner._advance_fetched = true;
+            var self = this;
+            rpc.query({
+                model: 'res.partner',
+                method: 'read',
+                args: [[partner.id], [
+                    'pos_advance_balance',
+                    'advance_payment_allowed',
+                    'advance_overdraft_limit',
+                    'advance_available',
+                    'advance_credit_used',
+                    'advance_credit_remaining',
+                    'pos_advance_session_used',
+                ]],
+            }).then(function (result) {
+                if (result && result.length) {
+                    var vals = result[0];
+                    _.each([
+                        'pos_advance_balance',
+                        'advance_payment_allowed',
+                        'advance_overdraft_limit',
+                        'advance_available',
+                        'advance_credit_used',
+                        'advance_credit_remaining',
+                        'pos_advance_session_used',
+                    ], function (field) {
+                        if (vals[field] !== undefined) {
+                            partner[field] = vals[field];
+                        }
+                    });
+                }
+                self.display_client_details('show', partner, clickpos);
+            }, function () {
+                self.display_client_details('show', partner, clickpos);
+            });
         },
     });
 

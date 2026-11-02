@@ -23,15 +23,25 @@
         <t t-jquery=".client-details-right" t-operation="append">
             <div class="client-detail">
                 <span class="label">Saldo a Favor</span>
-                <span t-attf-style="font-weight: bold; #{partner.pos_advance_balance > 0 ? 'color: #28a745;' : 'color: #dc3545;'}">
-                    <t t-esc='widget.format_currency(partner.pos_advance_balance)'/>
-                </span>
+                <t t-if="partner.pos_advance_balance === undefined">
+                    <span class="label" style="font-weight: bold;">…</span>
+                </t>
+                <t t-else="">
+                    <span t-attf-style="font-weight: bold; #{partner.pos_advance_balance > 0 ? 'color: #28a745;' : 'color: #dc3545;'}">
+                        <t t-esc='widget.format_currency(partner.pos_advance_balance)'/>
+                    </span>
+                </t>
             </div>
             <div class="client-detail">
                 <span class="label">Disponible</span>
-                <span t-attf-style="font-weight: bold; #{partner.advance_available > 0 ? 'color: #28a745;' : 'color: #dc3545;'}">
-                    <t t-esc='widget.format_currency(partner.advance_available || 0)'/>
-                </span>
+                <t t-if="partner.advance_available === undefined">
+                    <span class="label" style="font-weight: bold;">…</span>
+                </t>
+                <t t-else="">
+                    <span t-attf-style="font-weight: bold; #{partner.advance_available > 0 ? 'color: #28a745;' : 'color: #dc3545;'}">
+                        <t t-esc='widget.format_currency(partner.advance_available)'/>
+                    </span>
+                </t>
             </div>
             <div class="client-detail">
                 <button class="button details-button o_advance_history_btn"
@@ -46,7 +56,8 @@
     <t t-extend="ClientLine">
         <t t-jquery="tr.client-line" t-operation="append">
             <td t-attf-style="font-weight: bold; #{partner.pos_advance_balance > 0 ? 'color: #28a745;' : ''}">
-                <t t-esc='widget.format_currency(partner.pos_advance_balance)'/>
+                <t t-if="partner.pos_advance_balance === undefined">—</t>
+                <t t-else=""><t t-esc='widget.format_currency(partner.pos_advance_balance)'/></t>
             </td>
         </t>
     </t>

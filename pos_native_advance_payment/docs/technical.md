@@ -386,7 +386,7 @@ All other models (`res.partner`, `pos.order`, etc.) use their existing ACLs from
 
 ## Known Limitations
 
-1. **No `@api.depends`** on `pos_advance_balance`: Odoo 13's `res.partner` lacks `unreconciled_aml_ids`. Field is computed on every access.
+1. **No `@api.depends`** on `pos_advance_balance`: Odoo 13's `res.partner` lacks `unreconciled_aml_ids`. Field is computed on every access, but `_compute_advance_amounts` works in batch (~10 queries total, constant vs nº partners) and the POS only lazy-loads these fields for the selected client (see `load_fields` in the JS).
 2. **Race condition handling:** `FOR UPDATE NOWAIT` prevents concurrent use of the same advance lines, but the failing transaction throws an error that the user sees as a server error. A retry mechanism is not implemented.
 3. **Multi-currency:** `account.partial.reconcile` records are created with `amount_currency = 0` and `currency_id = False`. Multi-currency reconciliations may require manual intervention.
 4. **JS refresh:** Balance is refreshed when `PaymentScreenWidget.show()` is called, but stale data may appear briefly before the RPC completes.
