@@ -641,6 +641,9 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
                     if (result && result.length) {
                         client.pos_advance_balance = result[0].pos_advance_balance;
                     }
+                }, function () {
+                    // Sin red (offline): se conserva el valor en caché y
+                    // el flujo del depósito sigue normal.
                 });
             }).catch(function (error) {
                 var msg = error;
@@ -912,6 +915,8 @@ odoo.define('pos_native_advance_payment.pos_native_advance_payment', function (r
             if (!result) return;
             var url = '/web#action=' + encodeURIComponent(JSON.stringify(result));
             window.open(url, '_blank');
+        }, function () {
+            // Sin red (offline): no se abre el historial, sin interrumpir.
         });
     });
 

@@ -53,20 +53,10 @@
         </t>
     </t>
 
-    <t t-extend="ClientLine">
-        <t t-jquery="tr.client-line" t-operation="append">
-            <td t-attf-style="font-weight: bold; #{partner.pos_advance_balance > 0 ? 'color: #28a745;' : ''}">
-                <t t-if="partner.pos_advance_balance === undefined">—</t>
-                <t t-else=""><t t-esc='widget.format_currency(partner.pos_advance_balance)'/></t>
-            </td>
-        </t>
-    </t>
-
-    <t t-extend="ClientListScreenWidget">
-        <t t-jquery="table.client-list thead tr" t-operation="append">
-            <th>Saldo a Favor</th>
-        </t>
-    </t>
+    <!-- Columna de saldo en la lista: eliminada. La carga masiva ya no
+         trae saldos (rendimiento) y la columna quedaba en "—" para casi
+         todos los registros. El saldo se consulta en el detalle del
+         cliente, la pantalla de pago y el bloque bajo el total. -->
 
     <!-- Saldo a favor bajo el total en la pantalla de productos -->
     <t t-extend="OrderWidget">
