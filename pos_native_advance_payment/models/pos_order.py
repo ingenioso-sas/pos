@@ -109,6 +109,10 @@ class PosOrder(models.Model):
         abiertas distintas no pueden gastar el mismo dinero (cubre sesiones
         rescue y multicaja). La orden actual se excluye (aún no existe en
         BD y llega por UI).
+
+        Solo cuentan los consumos positivos: las devoluciones (montos
+        negativos) NO consumen saldo, lo crean (su nota crédito ya suma
+        en el total). Restar un negativo inflaría el disponible.
         """
         domain = [
             ("partner_id", "=", partner.id),
@@ -129,9 +133,10 @@ class PosOrder(models.Model):
             domain.append(("id", "!=", exclude_order_id))
         total = 0.0
         for other in self.search(domain):
-            total += sum(other.payment_ids.filtered(
-                lambda p: p.payment_method_id.is_advance_payment
-            ).mapped('amount'))
+            total += sum(
+                amount for amount in other.payment_ids.filtered(
+                    lambda p: p.payment_method_id.is_advance_payment
+                ).mapped('amount') if amount > 0.0)
         return total
 
     @api.model

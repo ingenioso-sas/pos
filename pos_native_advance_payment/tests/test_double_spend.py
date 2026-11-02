@@ -325,3 +325,84 @@ class TestDoubleSpendSameSession(TransactionCase):
             order_b._check_advance_payment_restrictions(
                 ui_order=self._ui_order(2000.0)
             )
+
+    def test_refund_does_not_count_as_session_used(self):
+        """Una devolución con Saldo en sesión abierta no es consumo.
+
+        Caso Shop/1415: el pago negativo (-65000) restaba como uso
+        negativo e inflaba el disponible al doble (saldo + nota).
+        La devolución crea crédito (la nota ya suma en el total);
+        solo los consumos positivos descuentan.
+        """
+        self._make_order_with_advance("Test-R", -2000.0)
+        used = self.env["pos.order"]._get_open_sessions_advance_used(
+            self.partner, self.company
+        )
+        self.assertAlmostEqual(used, 0.0)
+        self.partner.invalidate_cache()
+        self.assertAlmostEqual(self.partner.pos_advance_session_used, 0.0)
+
+    def test_sale_plus_refund_counts_only_sale(self):
+        """Venta + devolución en sesión abierta: solo la venta descuenta."""
+        self._make_order_with_advance("Test-1", 2000.0)
+        self._make_order_with_advance("Test-R", -2000.0)
+        used = self.env["pos.order"]._get_open_sessions_advance_used(
+            self.partner, self.company
+        )
+        self.assertAlmostEqual(used, 2000.0)
+
+    def _make_mirror_credit(self, partner, amount):
+        """Crédito sin conciliar en CxC (como el espejo de la sesión)."""
+        rxc = partner.property_account_receivable_id
+        journal = self.env["account.journal"].search(
+            [("type", "=", "general"),
+             ("company_id", "=", self.company.id)],
+            limit=1,
+        )
+        self.assertTrue(journal, "Debe existir un diario misceláneo")
+        offset = self.env["account.account"].search(
+            [("company_id", "=", self.company.id),
+             ("id", "!=", rxc.id),
+             ("deprecated", "=", False)],
+            limit=1,
+        )
+        move = self.env["account.move"].create(
+            {
+                "type": "entry",
+                "journal_id": journal.id,
+                "date": fields.Date.today(),
+                "line_ids": [
+                    (0, 0, {"name": "Espejo",
+                            "account_id": rxc.id,
+                            "partner_id": partner.id,
+                            "credit": amount}),
+                    (0, 0, {"name": "Contrapartida",
+                            "account_id": offset.id,
+                            "debit": amount}),
+                ],
+            }
+        )
+        move.post()
+        return move.line_ids.filtered(
+            lambda l: l.account_id == rxc and l.credit > 0.0)
+
+    def test_mirror_to_invoice_direct_pairing(self):
+        """Espejo sin enlace nativo previo paga la factura (Shop/1416).
+
+        Si el cierre nativo nunca enlazó espejo↔factura (espejos neteados
+        con una devolución), la liquidación debe parearlos directo en vez
+        de dejar la factura abierta para siempre.
+        """
+        order = self._make_order_with_advance("Test-M", 2000.0)
+        inv = self._post_invoice_for(self.partner, order, 2000.0)
+        self.assertAlmostEqual(inv.amount_residual, 2000.0)
+        mirror = self._make_mirror_credit(self.partner, 2000.0)
+        self.assertFalse(mirror.reconciled)
+        MoveLine = self.env["account.move.line"]
+        fresh = lambda ids: MoveLine.browse(ids).exists()
+        rxc = self.partner.property_account_receivable_id
+        self.session._pair_mirror_to_invoices(mirror, inv, rxc, fresh)
+        inv.invalidate_cache()
+        mirror.invalidate_cache()
+        self.assertAlmostEqual(inv.amount_residual, 0.0)
+        self.assertTrue(mirror.reconciled)

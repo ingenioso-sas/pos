@@ -137,6 +137,17 @@ class PosSession(models.Model):
             return
 
         if overdraft <= 0.001:
+            # Todo fondeado, pero la factura puede seguir abierta si el
+            # nativo nunca la enlazó con el espejo (p. ej. espejos neteados
+            # con una devolución, caso Shop/1416). Pareo directo del espejo
+            # restante; si no hay nada abierto, no hace nada.
+            mirror = MoveLine.search([
+                ('move_id', '=', self.move_id.id),
+                ('account_id', '=', rxc.id),
+                ('partner_id', '=', commercial.id),
+                ('credit', '>', 0.0),
+            ])
+            self._pair_mirror_to_invoices(mirror, invoices, rxc, fresh)
             return  # Nativo correcto: todo fondeado.
 
         # 3) Desemparejar espejo↔factura por el descubierto y reasignar el
@@ -152,8 +163,12 @@ class PosSession(models.Model):
             ('debit_move_id.move_id', 'in', invoices.ids),
         ])
         if not linked:
-            _logger.warning('Sin pareo espejo↔factura para %s; revisión.',
-                            commercial.display_name)
+            # Sin enlace previo del nativo: pareo directo del espejo
+            # restante contra las facturas abiertas (caso Shop/1416).
+            self._pair_mirror_to_invoices(mirror, invoices, rxc, fresh)
+            _logger.info(
+                'Sin pareo nativo espejo↔factura para %s; pareo directo.',
+                commercial.display_name)
             return
         (linked.mapped('debit_move_id')
          | linked.mapped('credit_move_id')).remove_move_reconcile()
@@ -330,6 +345,26 @@ class PosSession(models.Model):
                     _logger.warning('Pareo omitido Dr %s Cr %s: %s',
                                     debit.id, credit.id, e)
         return paired
+
+    def _pair_mirror_to_invoices(self, mirror, invoices, rxc, fresh):
+        """Pareo directo del espejo restante contra facturas abiertas.
+
+        Red de seguridad cuando el nativo nunca enlazó espejo↔factura
+        (p. ej. espejos neteados con una devolución, caso Shop/1416: la
+        factura quedaba abierta para siempre). Solo pareo hasta el
+        residual, facturas antiguas primero; si no hay nada abierto,
+        no hace nada.
+        """
+        mirror = fresh(mirror.ids).filtered(lambda l: not l.reconciled)
+        for inv in invoices.sorted('date'):
+            open_lines = fresh(inv.line_ids.ids).filtered(
+                lambda l: l.account_id == rxc and not l.reconciled
+                and l.debit > 0.0)
+            if open_lines:
+                self._pair_amount(
+                    mirror.filtered(lambda l: not l.reconciled),
+                    open_lines,
+                    sum(open_lines.mapped('amount_residual')))
 
     def _pair_account_lines(self, account):
         """Pareo FIFO global en una cuenta de clearing (2805)."""
