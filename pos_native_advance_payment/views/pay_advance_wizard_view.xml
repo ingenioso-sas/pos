@@ -58,5 +58,6 @@
               name="Pagar con Saldo a Favor"
               parent="account.menu_finance_receivables"
               action="pay_advance_wizard_action"
+              groups="account.group_account_manager"
               sequence="55"/>
 </odoo>

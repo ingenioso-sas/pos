@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 
 class AdvanceBalanceReport(models.TransientModel):
@@ -21,8 +21,13 @@ class AdvanceBalanceReport(models.TransientModel):
         string='Líneas del reporte')
 
     def action_generate(self):
+        if not self.env.user.has_group('account.group_account_user'):
+            raise AccessError(_('Solo usuarios contables pueden generar este reporte.'))
+        if self.company_id not in self.env.user.company_ids:
+            raise AccessError(_('No puede consultar otra compañía.'))
         self.line_ids.unlink()
-        partners = self.partner_ids or self.env['res.partner'].search([])
+        partners = (self.partner_ids or self.env['res.partner'].search([])).with_context(
+            force_company=self.company_id.id)
         today = fields.Date.today()
         to_create = []
         for partner in partners:

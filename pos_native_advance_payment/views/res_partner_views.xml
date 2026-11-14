@@ -12,6 +12,7 @@
                     <field name="pos_advance_balance"/>
                     <field name="advance_credit_used"/>
                     <field name="advance_available"/>
+                    <field name="advance_ghosts"/>
                     <button name="action_pos_advance_history" string="Ver movimientos"
                             type="object" icon="fa-history"/>
                 </group>

@@ -73,6 +73,11 @@ class AccountPayment(models.Model):
         """
         if amount <= 0.0:
             raise UserError(_("El monto del anticipo debe ser positivo."))
+        if journal.company_id != (pos_order.company_id if pos_order else
+                                  self.env.company):
+            raise UserError(_(
+                'El diario del anticipo pertenece a otra compañía.'))
+        partner = partner.with_context(force_company=journal.company_id.id)
         if journal.type == 'cash':
             raise UserError(_(
                 "El diario de anticipos '%s' no puede ser de efectivo: "

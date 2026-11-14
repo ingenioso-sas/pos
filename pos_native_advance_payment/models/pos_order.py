@@ -2,7 +2,7 @@
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -43,6 +43,10 @@ class PosOrder(models.Model):
     @api.model
     def _validate_deposit_config_ui(self, data):
         pos_session = self.env['pos.session'].browse(data.get('pos_session_id'))
+        if not pos_session.exists() or \
+                pos_session.company_id not in self.env.user.company_ids:
+            raise AccessError(_(
+                'La sesión TPV no existe o pertenece a otra compañía.'))
         company = pos_session.company_id or self.env.company
         if not company.pos_advance_account_id:
             raise UserError(_(
@@ -81,10 +85,14 @@ class PosOrder(models.Model):
                 continue
         if not method_ids:
             return False
-        return bool(self.env['pos.payment.method'].search(
-            [('id', 'in', method_ids), ('is_advance_payment', '=', True)],
-            limit=1,
-        ))
+        session = self.env['pos.session'].browse(ui_order.get('pos_session_id'))
+        domain = [
+            ('id', 'in', method_ids),
+            ('is_advance_payment', '=', True),
+        ]
+        if session.company_id:
+            domain.append(('company_id', '=', session.company_id.id))
+        return bool(self.env['pos.payment.method'].search(domain, limit=1))
 
     @api.model
     def _get_session_advance_used(self, session, partner, exclude_order_id=None):
@@ -140,7 +148,8 @@ class PosOrder(models.Model):
         return total
 
     @api.model
-    def _get_advance_credit_used(self, partner, exclude_open_sessions=True):
+    def _get_advance_credit_used(self, partner, exclude_open_sessions=True,
+                                 company=None):
         """Sobregiro en uso: residual abierto de facturas nacidas de ventas
         TPV con Saldo a Favor. Esas facturas consumieron cupo de crédito que
         aún no se ha pagado por otra vía.
@@ -150,12 +159,16 @@ class PosOrder(models.Model):
         el cap de sesiones y contarlo dos veces bloquearía de más ventas
         legítimas (p. ej. saldo 4000, venta1 2000, venta2 2000).
         """
+        company = company or self.env.company
+        partner = partner.with_context(force_company=company.id)
         methods = self.env['pos.payment.method'].search(
-            [('is_advance_payment', '=', True)])
+            [('is_advance_payment', '=', True),
+             ('company_id', '=', company.id)])
         if not methods:
             return 0.0
         payments = self.env['pos.payment'].search(
-            [('payment_method_id', 'in', methods.ids)])
+            [('payment_method_id', 'in', methods.ids),
+             ('pos_order_id.company_id', '=', company.id)])
         order_names = [p.pos_order_id.name for p in payments
                        if p.pos_order_id.partner_id == partner]
         if not order_names:
@@ -163,12 +176,14 @@ class PosOrder(models.Model):
         invoices = self.env['account.move'].search([
             ('type', '=', 'out_invoice'),
             ('state', '=', 'posted'),
+            ('company_id', '=', company.id),
             ('invoice_origin', 'in', order_names),
             ('amount_residual', '>', 0.001),
         ])
         if exclude_open_sessions:
             open_names = set(self.search([
                 ('partner_id', '=', partner.id),
+                ('company_id', '=', company.id),
                 ('state', 'not in', ('cancel', 'done')),
             ]).mapped('name'))
             invoices = invoices.filtered(
@@ -199,12 +214,14 @@ class PosOrder(models.Model):
                     if amount <= 0.0:
                         continue
                     method = methods.browse(vals.get('payment_method_id'))
-                    if method.exists() and method.is_advance_payment:
+                    if (method.exists() and method.is_advance_payment and
+                            method.company_id == order.company_id):
                         advance_amount += amount
                         advance_methods |= method
             else:  # Llamadas sin payload (revalidaciones internas)
                 found = order.payment_ids.filtered(
-                    lambda p: p.payment_method_id.is_advance_payment
+                    lambda p: p.payment_method_id.is_advance_payment and
+                    p.payment_method_id.company_id == order.company_id
                 )
                 advance_amount = sum(found.mapped('amount'))
                 advance_methods = found.mapped('payment_method_id')
@@ -227,25 +244,39 @@ class PosOrder(models.Model):
                 raise ValidationError(_(
                     "Debe seleccionar un cliente para usar el método de Saldo a Favor."
                 ))
-            partner = order.partner_id
+            partner = order.partner_id.with_context(
+                force_company=order.company_id.id)
             # Serializa consumidores concurrentes del mismo saldo: el segundo
             # cajero recibe "reintente" en vez de permitir sobregiro doble.
             try:
+                self.env.cr.execute(
+                    'SELECT id FROM res_partner WHERE id = %s FOR UPDATE NOWAIT',
+                    [partner.id])
                 self.env.cr.execute("""
                     SELECT id FROM account_move_line
                     WHERE partner_id = %s
                       AND account_id = %s
+                      AND company_id = %s
                       AND reconciled = false
                       AND move_id IN (SELECT id FROM account_move WHERE state = 'posted')
                     FOR UPDATE NOWAIT
                 """, [partner.id,
-                      partner.property_account_receivable_id.id])
+                      partner.property_account_receivable_id.id,
+                      order.company_id.id])
             except Exception as e:
                 if 'could not obtain lock' in str(e).lower():
                     raise ValidationError(_(
                         "Otro cajero usa el saldo de este cliente. "
                         "Reintente el pago."))
                 raise
+            foreign_lines = partner._get_advance_outstanding_lines(
+                order.company_id).filtered(
+                    lambda l: l.currency_id or l.account_id.currency_id)
+            if foreign_lines:
+                raise ValidationError(_(
+                    'El saldo a favor de este cliente está en moneda '
+                    'extranjera y requiere revisión contable antes de usarlo '
+                    'en el TPV.'))
             if not partner.advance_payment_allowed:
                 raise ValidationError(_(
                     "El cliente %s no está habilitado para usar Saldo a Favor en TPV."
@@ -265,7 +296,8 @@ class PosOrder(models.Model):
                 ) % (advance_amount, order.amount_total))
             available = partner.pos_advance_balance + \
                 self._get_effective_overdraft(partner) - \
-                self._get_advance_credit_used(partner) - \
+                self._get_advance_credit_used(
+                    partner, company=order.company_id) - \
                 self._get_open_sessions_advance_used(
                     partner,
                     order.company_id or order.session_id.company_id,
@@ -306,39 +338,111 @@ class PosOrder(models.Model):
                 and sum(o.payment_ids.filtered(
                     lambda p: p.payment_method_id.is_advance_payment
                 ).mapped('amount')) < -0.001):
-            self._reverse_advance_refund(order)
+            self._apply_refund_to_open_invoices(order)
         return res
 
-    def _reverse_advance_refund(self, refund):
-        """Aplica la nota de devolución a facturas abiertas con Saldo (FIFO,
-        antiguas primero) del mismo socio. Sin buscar "la" venta original:
-        con compras repetidas es inidentificable y no hace falta — el crédito
-        de la nota es fungible. Remanente sin facturas abiertas queda como
-        crédito nuevo gastable. Sin historia que desemparejar. Errores:
-        propagan (rollback)."""
+    def _get_refund_order_names(self, partner, company):
+        """Nombres de pedidos del socio pagados (total o parcial) con Saldo.
+
+        Fuente única: `pos.payment` con método de anticipo (igual que
+        `_get_advance_credit_used`). Robusto frente al momento de llamada:
+        no depende de que los `pos.payment` de la devolución en curso ya
+        existan en BD.
+        """
+        methods = self.env['pos.payment.method'].search(
+            [('is_advance_payment', '=', True),
+             ('company_id', '=', company.id)])
+        if not methods:
+            return []
+        payments = self.env['pos.payment'].search([
+            ('payment_method_id', 'in', methods.ids),
+            ('pos_order_id.partner_id', '=', partner.id),
+            ('pos_order_id.company_id', '=', company.id),
+        ])
+        names = set()
+        for pay in payments:
+            order = pay.pos_order_id
+            if order and not order.is_advance_deposit:
+                names.add(order.name)
+        return sorted(names)
+
+    @api.model
+    def apply_refund_to_open_invoices(self, refund):
+        """RPC-safe wrapper for the internal refund reconciliation helper."""
+        if not self.env.user.has_group('account.group_account_manager'):
+            raise AccessError(_(
+                'Solo un responsable contable puede reprocesar devoluciones.'))
+        return self._apply_refund_to_open_invoices(refund)
+
+    @api.model
+    def _apply_refund_to_open_invoices(self, refund):
+        """Aplica la nota crédito de una devolución TPV a facturas abiertas
+        con Saldo a Favor del mismo socio (FIFO: antiguas primero).
+
+        Idempotente y re-ejecutable (cron/wizard para huérfanos como
+        RINV/2026/0009 del caso POS/01303): solo crea parciales por
+        residuales abiertos; una segunda corrida no duplica nada.
+        Devuelve el monto aplicado (0.0 si no había nada que aplicar).
+        Los errores propagan (rollback seguro; nada queda a medias).
+        """
+        refund.ensure_one()
+        if refund._name != 'pos.order':
+            raise UserError(_('El registro no es una devolución TPV.'))
+        if (refund.amount_total or 0.0) >= -0.001:
+            raise UserError(_('La orden TPV no tiene un total negativo.'))
+        if sum(refund.payment_ids.filtered(
+                lambda p: p.payment_method_id.is_advance_payment
+        ).mapped('amount')) >= -0.001:
+            raise UserError(_(
+                'La devolución no fue pagada con Saldo a Favor.'))
+        if refund.state == 'cancel':
+            raise UserError(_('No se puede reprocesar una devolución cancelada.'))
+        company = refund.company_id
+        if not company:
+            raise UserError(_('La devolución no tiene compañía.'))
+        self.env.cr.execute(
+            'SELECT id FROM pos_order WHERE id = %s FOR UPDATE',
+            [refund.id])
+        refund = refund.with_context(force_company=company.id)
         rinv = refund.account_move
         if not rinv or rinv.type != 'out_refund' or rinv.state != 'posted':
             _logger.info('Devolución %s sin nota crédito publicada; se omite.',
                          refund.name)
-            return False
+            return 0.0
         partner = refund.partner_id
         rxc = partner.property_account_receivable_id
-        order_names = [o.name for o in self.search([
-            ('partner_id', '=', partner.id),
-            ('is_advance_deposit', '=', False),
-        ]) if o.payment_ids.filtered(
-            lambda p: p.payment_method_id.is_advance_payment)]
+        if not rxc:
+            return 0.0
+        order_names = self._get_refund_order_names(partner, company)
         invoices = self.env['account.move'].search([
             ('partner_id', '=', partner.id),
             ('type', '=', 'out_invoice'),
             ('state', '=', 'posted'),
+            ('company_id', '=', company.id),
             ('invoice_origin', 'in', order_names or [False]),
             ('amount_residual', '>', 0.001),
         ], order='date asc, id asc')
-        Partial = self.env['account.partial.reconcile']
         credit_lines = rinv.line_ids.filtered(
             lambda l: l.account_id == rxc and not l.reconciled
             and l.credit > 0.0)
+        debit_lines = invoices.mapped('line_ids').filtered(
+            lambda l: l.account_id == rxc and not l.reconciled
+            and l.debit > 0.0)
+        lock_ids = credit_lines.ids + debit_lines.ids
+        if lock_ids:
+            self.env.cr.execute(
+                'SELECT id FROM account_move_line '
+                'WHERE id IN %s FOR UPDATE', [tuple(lock_ids)])
+            self.env['account.move.line'].invalidate_cache(
+                ids=lock_ids)
+        _logger.info(
+            'Devolución %s: RINV %s; órdenes con saldo=%s; '
+            'facturas abiertas=%s; líneas crédito=%s.',
+            refund.name, rinv.name, order_names,
+            [(m.name, m.invoice_origin, m.amount_residual) for m in invoices],
+            [(l.id, l.amount_residual) for l in credit_lines],
+        )
+        applied = 0.0
         for cline in credit_lines:
             if cline.reconciled:
                 continue
@@ -355,14 +459,33 @@ class PosOrder(models.Model):
                                  abs(dline.amount_residual))
                     if amount <= 0.001:
                         continue
-                    Partial.create({
-                        'debit_move_id': dline.id,
-                        'credit_move_id': cline.id,
-                        'amount': amount,
-                    })
-        _logger.info('Devolución %s: nota %s aplicada a facturas con saldo.',
-                     refund.name, rinv.name)
-        return True
+                    self._create_advance_partial(dline, cline, amount)
+                    applied += amount
+                    _logger.info(
+                        'Devolución %s: aplicado %s '
+                        '(Dr %s factura %s ↔ Cr %s nota %s).',
+                        refund.name, amount,
+                        dline.id, inv.name, cline.id, rinv.name,
+                    )
+        _logger.info('Devolución %s: nota %s aplicada a facturas con saldo; '
+                     'total aplicado %s.',
+                     refund.name, rinv.name, applied)
+        return applied
+
+    def _create_advance_partial(self, debit, credit, amount):
+        """Create a safe company-currency partial and complete full matching."""
+        if (debit.currency_id or credit.currency_id or
+                debit.account_id.currency_id):
+            raise UserError(_(
+                'No se puede conciliar automáticamente una línea en moneda '
+                'extranjera; requiere revisión contable.'))
+        partial = self.env['account.partial.reconcile'].create({
+            'debit_move_id': debit.id,
+            'credit_move_id': credit.id,
+            'amount': amount,
+        })
+        (debit | credit).check_full_reconcile()
+        return partial
 
     def _create_advance_payment_for_deposit(self, order):
         """Crea el account.payment del depósito (idempotente).

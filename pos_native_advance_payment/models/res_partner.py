@@ -10,6 +10,12 @@ _logger = logging.getLogger(__name__)
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
+    def _get_context_company(self):
+        company_id = self.env.context.get('force_company')
+        company = self.env['res.company'].browse(company_id).exists() \
+            if company_id else self.env['res.company']
+        return company or self.env.user.company_id
+
     pos_advance_balance = fields.Float(
         string="Saldo a Favor",
         compute="_compute_advance_amounts",
@@ -45,6 +51,16 @@ class ResPartner(models.Model):
              "refresh del TPV."
     )
 
+    advance_ghosts = fields.Float(
+        string="Fantasmas de Sesión (CxC sin conciliar)",
+        compute="_compute_advance_ghosts",
+        groups="account.group_account_user",
+        help="Suma de residuales de líneas CxC sin conciliar del socio en "
+             "asientos de sesiones TPV (move_id de pos.session). Detecta "
+             "líneas huérfanas del cierre (caso POS/01303: 8475/8476/8471/"
+             "8472) sin SQL manual. 0.0 = sesión neta."
+    )
+
     advance_payment_allowed = fields.Boolean(
         string="Permite Saldo a Favor en TPV",
         default=True,
@@ -60,7 +76,7 @@ class ResPartner(models.Model):
              "facturas de saldo aún abiertas."
     )
 
-    def _get_unreconciled_advance_payments(self):
+    def _get_unreconciled_advance_payments(self, company=None):
         """Devuelve los account.payment de cliente (inbound, posted) con residual > 0.
 
         Fuente del saldo a favor: incluye pagos creados desde TPV
@@ -68,9 +84,12 @@ class ResPartner(models.Model):
         solo su residual, no el total original.
         """
         self.ensure_one()
+        company = company or self._get_context_company()
+        partner = self.with_context(force_company=company.id)
         Payment = self.env['account.payment']
         payments = Payment.search([
             ('partner_id', '=', self.id),
+            ('company_id', '=', company.id),
             ('payment_type', '=', 'inbound'),
             ('partner_type', '=', 'customer'),
             ('state', '=', 'posted'),
@@ -81,7 +100,7 @@ class ResPartner(models.Model):
                 residual = payment._get_advance_residual()
             except Exception:
                 try:
-                    residual = self._get_payment_residual_fallback(payment)
+                    residual = partner._get_payment_residual_fallback(payment)
                 except Exception as e:
                     _logger.warning(
                         'No se pudo calcular residual del pago %s: %s',
@@ -92,22 +111,24 @@ class ResPartner(models.Model):
                 result.append((payment, residual))
         return result
 
-    def _get_unreconciled_credit_notes(self):
+    def _get_unreconciled_credit_notes(self, company=None):
         """Créditos de notas (out_refund publicadas, residual abierto).
 
         Una devolución cuyo remanente no cerró factura queda aquí como
         crédito nuevo y gastable, igual que un pago.
         """
         self.ensure_one()
+        company = company or self._get_context_company()
         moves = self.env['account.move'].search([
             ('partner_id', '=', self.id),
+            ('company_id', '=', company.id),
             ('type', '=', 'out_refund'),
             ('state', '=', 'posted'),
             ('amount_residual', '>', 0.001),
         ])
         return moves
 
-    def _get_advance_outstanding_lines(self):
+    def _get_advance_outstanding_lines(self, company=None):
         """Líneas CxC sin conciliar aplicables como saldo a favor.
 
         Fuente única para TPV, wizard y reportes: incluye tanto líneas
@@ -116,11 +137,14 @@ class ResPartner(models.Model):
         estándar (js_assign_outstanding_line / partial.reconcile).
         """
         self.ensure_one()
-        receivable = self.property_account_receivable_id
+        company = company or self._get_context_company()
+        partner = self.with_context(force_company=company.id)
+        receivable = partner.property_account_receivable_id
         if not receivable:
             return self.env['account.move.line'].browse()
         return self.env['account.move.line'].search([
             ('partner_id', '=', self.id),
+            ('company_id', '=', company.id),
             ('account_id', '=', receivable.id),
             ('reconciled', '=', False),
             ('move_id.state', '=', 'posted'),
@@ -129,10 +153,12 @@ class ResPartner(models.Model):
 
     def _get_payment_residual_fallback(self, payment):
         """Residual del pago vía líneas a cobrar no conciliadas de su asiento."""
-        receivable = self.property_account_receivable_id
+        partner = self.with_context(force_company=payment.company_id.id)
+        receivable = partner.property_account_receivable_id
         MoveLine = self.env['account.move.line']
         domain = [
             ('partner_id', '=', self.id),
+            ('company_id', '=', payment.company_id.id),
             ('reconciled', '=', False),
             ('move_id.state', '=', 'posted'),
         ]
@@ -145,7 +171,8 @@ class ResPartner(models.Model):
             move = False
             if getattr(payment, 'move_name', False):
                 move = self.env['account.move'].search(
-                    [('name', '=', payment.move_name)], limit=1)
+                    [('name', '=', payment.move_name),
+                     ('company_id', '=', payment.company_id.id)], limit=1)
             if not move:
                 # Sin rastro contable: pago sin aplicar = disponible total
                 if not payment.invoice_ids:
@@ -162,7 +189,9 @@ class ResPartner(models.Model):
     def _get_effective_overdraft(self):
         """Cupo de crédito: individual o, si es 0, el de la compañía."""
         self.ensure_one()
-        company = self.company_id or self.env.company
+        company = (self._get_context_company()
+                   if self.env.context.get('force_company')
+                   else self.company_id or self.env.user.company_id)
         return (self.advance_overdraft_limit or 0.0) or \
             (company.advance_overdraft_limit or 0.0)
 
@@ -216,16 +245,19 @@ class ResPartner(models.Model):
         Payment = self.env['account.payment']
         Move = self.env['account.move']
         PosOrder = self.env['pos.order']
+        company = self._get_context_company()
 
         receivable_by_pid = {}
         for partner in partners:
-            rxc = partner.property_account_receivable_id
+            rxc = partner.with_context(
+                force_company=company.id).property_account_receivable_id
             receivable_by_pid[partner.id] = rxc.id if rxc else False
 
         # 1) Residuales de pagos por partner (1-3 queries).
         pay_residual_by_pid = dict.fromkeys(pids, 0.0)
         payments = Payment.search([
             ('partner_id', 'in', pids),
+            ('company_id', '=', company.id),
             ('payment_type', '=', 'inbound'),
             ('partner_type', '=', 'customer'),
             ('state', '=', 'posted'),
@@ -237,6 +269,7 @@ class ResPartner(models.Model):
             amls = MoveLine.search([
                 ('payment_id', 'in', payments.ids),
                 ('partner_id', 'in', pids),
+                ('company_id', '=', company.id),
                 ('reconciled', '=', False),
                 ('move_id.state', '=', 'posted'),
             ])
@@ -264,7 +297,10 @@ class ResPartner(models.Model):
         if missing:
             names = [pay.move_name for pay in missing
                      if getattr(pay, 'move_name', False)]
-            moves = Move.search([('name', 'in', names)]) if names else Move
+            moves = Move.search([
+                ('name', 'in', names),
+                ('company_id', '=', company.id),
+            ]) if names else Move
             move_by_name = {move.name: move for move in moves} \
                 if moves else {}
             need = [pay for pay in missing
@@ -279,6 +315,7 @@ class ResPartner(models.Model):
                 for line in MoveLine.search([
                         ('move_id', 'in', need_move_ids),
                         ('partner_id', 'in', pids),
+                        ('company_id', '=', company.id),
                         ('reconciled', '=', False),
                         ('move_id.state', '=', 'posted'),
                 ]):
@@ -303,7 +340,8 @@ class ResPartner(models.Model):
         note_by_pid = dict.fromkeys(pids, 0.0)
         for row in Move.read_group(
                 [('partner_id', 'in', pids),
-                 ('type', '=', 'out_refund'),
+                  ('company_id', '=', company.id),
+                  ('type', '=', 'out_refund'),
                  ('state', '=', 'posted'),
                  ('amount_residual', '>', 0.001)],
                 ['partner_id', 'amount_residual'], ['partner_id']):
@@ -316,11 +354,13 @@ class ResPartner(models.Model):
         # 3) Crédito en uso por partner (4 queries máx).
         used_by_pid = dict.fromkeys(pids, 0.0)
         methods = self.env['pos.payment.method'].search(
-            [('is_advance_payment', '=', True)])
+            [('is_advance_payment', '=', True),
+             ('company_id', '=', company.id)])
         if methods:
             adv_payments = self.env['pos.payment'].search([
                 ('payment_method_id', 'in', methods.ids),
                 ('pos_order_id.partner_id', 'in', pids),
+                ('pos_order_id.company_id', '=', company.id),
             ])
             names_by_pid = {}
             for pay in adv_payments:
@@ -334,6 +374,7 @@ class ResPartner(models.Model):
             invoices = Move.search([
                 ('type', '=', 'out_invoice'),
                 ('state', '=', 'posted'),
+                ('company_id', '=', company.id),
                 ('invoice_origin', 'in', list(all_names)),
                 ('amount_residual', '>', 0.001),
             ]) if all_names else Move
@@ -343,6 +384,7 @@ class ResPartner(models.Model):
             open_by_pid = {}
             for order in PosOrder.search([
                     ('partner_id', 'in', pids),
+                    ('company_id', '=', company.id),
                     ('state', 'not in', ('cancel', 'done'))]):
                 open_by_pid.setdefault(order.partner_id.id, set()).add(
                     order.name)
@@ -355,10 +397,7 @@ class ResPartner(models.Model):
 
         # 4) Uso en sesiones abiertas por compañía (2 queries por compañía).
         session_used_by_pid = dict.fromkeys(pids, 0.0)
-        company_of = {}
-        for partner in partners:
-            company_of[partner.id] = partner.company_id.id \
-                if partner.company_id else self.env.company.id
+        company_of = dict.fromkeys(pids, company.id)
         pids_by_company = {}
         for pid, cid in company_of.items():
             pids_by_company.setdefault(cid, []).append(pid)
@@ -372,11 +411,13 @@ class ResPartner(models.Model):
             for order in PosOrder.search([
                     ('partner_id', 'in', cpids),
                     ('session_id', 'in', open_sessions.ids),
+                    ('company_id', '=', cid),
                     ('state', '!=', 'cancel'),
                     ('is_advance_deposit', '=', False)]):
                 amount = sum(
                     value for value in order.payment_ids.filtered(
-                        lambda p: p.payment_method_id.is_advance_payment
+                        lambda p: p.payment_method_id.is_advance_payment and
+                        p.payment_method_id.company_id.id == cid
                     ).mapped('amount') if value > 0.0)
                 session_used_by_pid[order.partner_id.id] = \
                     session_used_by_pid.get(order.partner_id.id, 0.0) + amount
@@ -414,3 +455,33 @@ class ResPartner(models.Model):
                 'default_partner_id': self.id,
             },
         }
+
+    def _compute_advance_ghosts(self):
+        """Suma por socio de residuales CxC sin conciliar en asientos de
+        sesiones TPV de la compañía activa (1 query, sin N+1)."""
+        if not self:
+            return
+        company = self._get_context_company()
+        commercial_ids = self.mapped('commercial_partner_id').ids
+        ghost_by_pid = dict.fromkeys(commercial_ids, 0.0)
+        session_moves = self.env['pos.session'].search([
+            ('config_id.company_id', '=', company.id),
+            ('move_id.state', '=', 'posted'),
+        ]).mapped('move_id')
+        if session_moves:
+            lines = self.env['account.move.line'].search([
+                ('partner_id.commercial_partner_id', 'in', commercial_ids),
+                ('move_id', 'in', session_moves.ids),
+                ('company_id', '=', company.id),
+                ('reconciled', '=', False),
+            ])
+            for line in lines:
+                commercial_id = line.partner_id.commercial_partner_id.id
+                if line.account_id.internal_type != 'receivable':
+                    continue
+                ghost_by_pid[commercial_id] = \
+                    ghost_by_pid.get(commercial_id, 0.0) + \
+                    abs(line.amount_residual)
+        for partner in self:
+            partner.advance_ghosts = ghost_by_pid.get(
+                partner.commercial_partner_id.id, 0.0)

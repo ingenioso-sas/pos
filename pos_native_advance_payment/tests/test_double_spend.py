@@ -20,6 +20,11 @@ class TestDoubleSpendSameSession(TransactionCase):
         self.config = self.env["pos.config"].search(
             [("company_id", "=", self.company.id)], limit=1
         )
+        if not self.config:
+            self.config = self.env["pos.config"].create({
+                "name": "TEST-Shop",
+                "company_id": self.company.id,
+            })
         self.assertTrue(self.config, "Debe existir una caja POS")
         self.advance_method = self.env["pos.payment.method"].search(
             [
@@ -28,9 +33,18 @@ class TestDoubleSpendSameSession(TransactionCase):
             ],
             limit=1,
         )
+        if not self.advance_method:
+            self.advance_method = self.env["pos.payment.method"].create({
+                "name": "TEST Saldo a Favor",
+                "company_id": self.company.id,
+                "is_advance_payment": True,
+                "split_transactions": True,
+            })
         self.assertTrue(
             self.advance_method, "Debe existir un método Saldo a Favor"
         )
+        self.config.write({"payment_method_ids": [
+            (4, self.advance_method.id)]})
         self.partner = self.env["res.partner"].create(
             {
                 "name": "Carlos Doble Gasto",

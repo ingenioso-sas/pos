@@ -2,7 +2,7 @@
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -32,17 +32,26 @@ class PayAdvanceWizard(models.TransientModel):
                 ('state', '=', 'posted')])
 
     @api.model
-    def _pos_order_names(self):
+    def _pos_order_names(self, company=None):
         """Nombres de pedidos TPV (para excluir sus facturas: el cierre las
         concilia solo; un pago manual intermedio descuadraría el reparto)."""
-        orders = self.env['pos.order'].search([('partner_id', '!=', False)])
+        company = company or self.env.company
+        methods = self.env['pos.payment.method'].search([
+            ('is_advance_payment', '=', True),
+            ('company_id', '=', company.id),
+        ])
+        orders = self.env['pos.order'].search([
+            ('partner_id', '!=', False),
+            ('company_id', '=', company.id),
+        ])
         return [o.name for o in orders if o.payment_ids.filtered(
-            lambda p: p.payment_method_id.is_advance_payment)]
+            lambda p: p.payment_method_id in methods)]
 
     def _compute_advance_balance(self):
         for wiz in self:
             if wiz.partner_id:
-                wiz.advance_balance = wiz.partner_id.pos_advance_balance
+                wiz.advance_balance = wiz.partner_id.with_context(
+                    force_company=wiz.company_id.id).pos_advance_balance
             else:
                 wiz.advance_balance = 0.0
 
@@ -57,7 +66,9 @@ class PayAdvanceWizard(models.TransientModel):
             if not wiz.partner_id:
                 wiz.payment_ids = False
                 continue
-            unreconciled = wiz.partner_id._get_unreconciled_advance_payments()
+            unreconciled = wiz.partner_id.with_context(
+                force_company=wiz.company_id.id
+            )._get_unreconciled_advance_payments(wiz.company_id)
             wiz.payment_ids = [(6, 0, [p.id for p, _r in unreconciled])]
 
     @api.depends('partner_id')
@@ -66,7 +77,9 @@ class PayAdvanceWizard(models.TransientModel):
             if not wiz.partner_id:
                 wiz.credit_note_ids = False
                 continue
-            notes = wiz.partner_id._get_unreconciled_credit_notes()
+            notes = wiz.partner_id.with_context(
+                force_company=wiz.company_id.id
+            )._get_unreconciled_credit_notes(wiz.company_id)
             wiz.credit_note_ids = [(6, 0, notes.ids)]
 
     @api.onchange('partner_id')
@@ -74,9 +87,10 @@ class PayAdvanceWizard(models.TransientModel):
         if not self.partner_id:
             self.invoice_ids = False
             return
-        excluded = self._pos_order_names()
+        excluded = self._pos_order_names(self.company_id)
         domain = [
             ('partner_id', '=', self.partner_id.id),
+            ('company_id', '=', self.company_id.id),
             ('type', '=', 'out_invoice'),
             ('state', '=', 'posted'),
             ('invoice_payment_state', '!=', 'paid'),
@@ -95,10 +109,25 @@ class PayAdvanceWizard(models.TransientModel):
         CxC, por eso comparten el mismo mecanismo.
         """
         self.ensure_one()
+        if not self.env.user.has_group('account.group_account_manager'):
+            raise AccessError(_('Solo un responsable contable puede aplicar saldos.'))
+        if self.company_id not in self.env.user.company_ids:
+            raise AccessError(_('No puede aplicar saldos de otra compañía.'))
         if not self.invoice_ids:
             raise UserError(_("Seleccione al menos una factura para pagar."))
-        unreconciled = self.partner_id._get_unreconciled_advance_payments()
-        notes = self.partner_id._get_unreconciled_credit_notes()
+        invalid = self.invoice_ids.filtered(lambda inv: (
+            inv.partner_id != self.partner_id or
+            inv.company_id != self.company_id or
+            inv.type != 'out_invoice' or inv.state != 'posted'))
+        if invalid:
+            raise UserError(_(
+                'Solo puede pagar facturas publicadas del cliente y compañía '
+                'seleccionados.'))
+        partner = self.partner_id.with_context(
+            force_company=self.company_id.id)
+        unreconciled = partner._get_unreconciled_advance_payments(
+            self.company_id)
+        notes = partner._get_unreconciled_credit_notes(self.company_id)
         if not unreconciled and not notes:
             raise UserError(_("El cliente no tiene saldo a favor sin conciliar."))
         available = sum(r for _p, r in unreconciled) + \
@@ -114,6 +143,7 @@ class PayAdvanceWizard(models.TransientModel):
         for payment, _res in unreconciled:
             domain = [
                 ('partner_id', '=', self.partner_id.id),
+                ('company_id', '=', self.company_id.id),
                 ('reconciled', '=', False),
                 ('move_id.state', '=', 'posted'),
                 ('credit', '>', 0.0),
@@ -128,9 +158,10 @@ class PayAdvanceWizard(models.TransientModel):
             payment_lines |= MoveLine.search(domain)
         # Remanentes de devoluciones: líneas Cr de out_refund en la misma CxC.
         if notes:
-            receivable = self.partner_id.property_account_receivable_id
+            receivable = partner.property_account_receivable_id
             note_lines = MoveLine.search([
                 ('move_id', 'in', notes.ids),
+                ('company_id', '=', self.company_id.id),
                 ('account_id', '=', receivable.id),
                 ('reconciled', '=', False),
                 ('credit', '>', 0.0),
@@ -142,15 +173,25 @@ class PayAdvanceWizard(models.TransientModel):
         for invoice in self.invoice_ids.sorted('invoice_date'):
             if invoice.invoice_payment_state == 'paid':
                 continue
+            invoice_applied = False
             for pline in payment_lines.filtered(lambda l: not l.reconciled):
                 try:
                     # v13: js_assign_outstanding_line (soporta parciales).
                     invoice.js_assign_outstanding_line(pline.id)
                     applied += 1
+                    invoice_applied = True
                     break
                 except Exception as e:
                     errors.append('%s: %s' % (invoice.name, e))
                     continue
+            if not invoice_applied:
+                errors.append(
+                    '%s: no se pudo aplicar ningún saldo disponible' %
+                    invoice.name)
+        if errors:
+            raise UserError(
+                _('No se pudo completar el pago de todas las facturas.') +
+                '\n%s' % '\n'.join(errors[:3]))
         if applied:
             return {'type': 'ir.actions.client', 'tag': 'reload'}
         raise UserError(
